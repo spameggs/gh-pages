@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="ipgeo">
+	<title>IP Geo Location</title>
+	<description>Locates users based on IP</description>
+	<author>Alex</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>1.1.1</version>
+	<date>15.04.2013</date>
+
+	<files>
+		<file>rlIPGeo.class.php</file>
+		<file>mysql/part1.sql</file>
+		<file>mysql/part2.sql</file>
+		<file>mysql/part3.sql</file>
+		<file>mysql/part4.sql</file>
+		<file>mysql/part5.sql</file>
+		<file>mysql/part6.sql</file>
+	</files>
+
+	<install>
+	<![CDATA[
+		$GLOBALS['rlDb'] -> query("DROP TABLE IF EXISTS `". RL_DBPREFIX ."ipgeo`");
+		$GLOBALS['rlDb'] -> query("
+			CREATE TABLE `". RL_DBPREFIX ."ipgeo` (
+			  `From` int(10) unsigned NOT NULL default '0',
+			  `To` int(10) unsigned NOT NULL default '0',
+			  `Country_code` char(2) NOT NULL default '',
+			  `Country_name` varchar(64) NOT NULL default '',
+			  KEY `From` (`From`),
+			  KEY `To` (`To`)
+			) DEFAULT CHARSET=utf8;
+		");
+
+		$GLOBALS['reefless'] -> loadClass('IPGeo', null, 'ipgeo');
+		$GLOBALS['rlIPGeo'] -> importIPs();
+	]]>
+	</install>
+
+	<hooks>
+		<hook name="init">
+		<![CDATA[
+			$GLOBALS['reefless'] -> loadClass('IPGeo', null, 'ipgeo');
+			$GLOBALS['rlIPGeo'] -> getLocationInfo();
+		]]>
+		</hook>
+		<hook name="apMixConfigItem">
+		<![CDATA[
+			if ( $param1['Key'] == 'ipgeo_default_country' )
+			{
+				$GLOBALS['reefless'] -> loadClass('IPGeo', null, 'ipgeo');
+				$countries = $GLOBALS['rlIPGeo'] -> getCountriesList();
+				$values = array();
+
+				foreach($countries as $key => $entry)
+				{
+					array_push($values, array(
+							'name' => $entry -> Country_name,
+							'Key' => $entry -> Country_code,
+							'ID' => $entry -> Country_code
+						)
+					);
+				}
+				$param1['Values'] = $values;
+			}
+		]]>
+		</hook>
+	</hooks>
+
+	<configs key="ipgeo" name="IP Geo Location">
+		<![CDATA[]]>
+		<config key="ipgeo_default_country" name="Default country" description="Default сountry in case of IP location failure" type="select" values=""><![CDATA[US]]></config>
+	</configs>
+
+	<uninstall>
+	<![CDATA[
+		$GLOBALS['rlDb'] -> query("DROP TABLE IF EXISTS `". RL_DBPREFIX ."ipgeo`");
+	]]>
+	</uninstall>
+</plugin>

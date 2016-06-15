@@ -1,0 +1,128 @@
+/* bookmarks styles */
+
+/* re-tweet/facebook like correction */
+.addthis_toolbox.addthis_pill_combo a {
+	float: left;
+}
+.addthis_toolbox.addthis_pill_combo a.at300b {
+	margin-top: -2px;
+}
+.addthis_toolbox.addthis_pill_combo a.addthis_button_tweet,
+.addthis_toolbox.addthis_pill_combo a.addthis_counter {
+	margin-top: -2px;
+}
+.addthis_button_compact .at15t_compact {
+	margin-right: 0;
+	/*float: left;*/
+}
+
+/* Custom Icons */
+.addthis_toolbox .custom_images a {
+	width: 64px;
+	height: 64px;
+	margin: 0;
+	padding: 0;
+}
+.addthis_toolbox .custom_images a img {
+	opacity: 1.0;
+}
+.addthis_toolbox .custom_images a:hover img {
+	opacity: 0.75;
+}
+
+/* CSS3 Styled Buttons */
+.addthis_share_btn a, .addthis_share_btn a:visited
+{
+/*	background: #222 url(images/btn-overlay.png) repeat-x;*/
+	background-color: #222;
+	display: inline-block; 
+	padding: 6px 12px; 
+	font-family: arial,helvetica,lucida,verdana,sans-serif;
+	font-size: 12px;
+	line-height: 1em;
+	color: #fff;
+	text-decoration: none;
+	-moz-border-radius: 5px;
+	-webkit-border-radius: 5px;
+	-moz-box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+	-webkit-box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+	border-radius: 5px;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+	text-shadow: 0 -1px 1px rgba(0,0,0,0.25);
+	border-bottom: 1px solid rgba(0,0,0,0.25);
+	position: relative;
+	cursor: pointer;
+}
+.addthis_share_btn a:hover { background-color: #111; color: #fff; }
+.addthis_share_btn a:active { top: 1px; }
+
+.addthis_share_btn a span, .addthis_share_btn:visited a span {
+	background: url(http://www.addthis.com/cms-content/images/gallery/icon-addthis.gif) no-repeat left;
+	padding: 1px 0 1px 18px;
+}       
+
+.addthis_32x32_style .at300bs, .addthis_32x32_style .at15t
+{
+	margin: 0 0 3px;
+}
+
+/* AddThis Vertical Layout Menu */
+.addthis_toolbox .vertical {
+	background: transparent;
+	width: 136px;
+	padding: 1px;
+	-moz-border-radius: 5px;
+	-webkit-border-radius: 5px;
+}
+
+.addthis_toolbox .vertical a {
+	position: relative;
+	display: block;
+	background: transparent;
+	width: 102px;
+	padding: 4px 0 6px 38px;
+	text-decoration: none;
+	color: #00bff3;
+	text-align: left;
+}
+
+.addthis_toolbox .vertical a:hover {    
+	background: #ecebeb;
+	color: #027999;
+	text-decoration: none;
+	-moz-border-radius: 4px;
+	-webkit-border-radius: 4px;
+}
+
+.addthis_toolbox .vertical span {
+	position: absolute;
+	left: 14px;
+	top: 4px;
+}
+
+.addthis_toolbox .vertical .more {
+	border-top: solid 1px #eee;
+	padding: 10px 0 0 0;
+	margin: 10px 10px 0 10px;
+	text-align: center;
+}
+
+.addthis_toolbox .vertical .more a {
+	padding: 4px 0;
+	margin: 0;
+}
+.addthis_toolbox .vertical .more a:hover {
+	background: none;
+}
+
+.addthis_toolbox .vertical .more span {
+	display: none;
+}
+
+.addthis_bar.addthis_bar_small,
+.at-floatingbar-share
+{
+	width: auto!important;
+}
+
+/* bookmarks styles end */

@@ -1,0 +1,443 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="banners">
+	<title>Banners</title>
+	<description>Allows Users and Administrator to add banners</description>
+	<author>Alex</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>2.3.4</version>
+	<date>12.02.2012</date>
+	<controller>banners</controller>
+
+	<files>
+		<file>add_banner.inc.php</file>
+		<file>add_banner.tpl</file>
+		<file>admin/banners.inc.php</file>
+		<file>admin/banners.tpl</file>
+		<file>admin/banner_boxes.inc.php</file>
+		<file>admin/banner_boxes.tpl</file>
+		<file>admin/banner_plans.inc.php</file>
+		<file>admin/banner_plans.tpl</file>
+		<file>banner.tpl</file>
+		<file>banner_plans.tpl</file>
+		<file>banners_box.tpl</file>
+		<file>delete_preparing_banner_plan.tpl</file>
+		<file>edit_banner.inc.php</file>
+		<file>edit_banner.tpl</file>
+		<file>my_banners.inc.php</file>
+		<file>my_banners.tpl</file>
+		<file>renew.inc.php</file>
+		<file>renew.tpl</file>
+		<file>rlBanners.class.php</file>
+		<file>static/jquery.fileupload-ui.js</file>
+		<file>static/jquery.fileupload.js</file>
+		<file>static/jquery.iframe-transport.js</file>
+		<file>static/tmpl.min.js</file>
+		<file>static/style.css</file>
+		<file>upload/account.php</file>
+		<file>upload/account_manager.tpl</file>
+		<file>upload/admin.php</file>
+		<file>upload/manager.tpl</file>
+		<file>upload/upload.php</file>
+	</files>
+
+	<install>
+	<![CDATA[
+		global $reefless, $rlDb;
+
+		$rlDb -> query("DROP TABLE IF EXISTS `". RL_DBPREFIX ."banner_plans`");
+		$rlDb -> query("
+			CREATE TABLE `". RL_DBPREFIX ."banner_plans` (
+			  `ID` int(11) NOT NULL AUTO_INCREMENT,
+			  `Key` varchar(255) NOT NULL,
+			  `Position` int(5) NOT NULL DEFAULT '0',
+			  `Admin` enum('0','1') NOT NULL DEFAULT '0',
+			  `Allow_for` mediumtext NOT NULL,
+			  `Geo` enum('0','1','2') NOT NULL DEFAULT '0',
+			  `Country` mediumtext NOT NULL,
+			  `Boxes` mediumtext NOT NULL,
+			  `Types` mediumtext NOT NULL,
+			  `Color` varchar(7) NOT NULL,
+			  `Price` varchar(10) NOT NULL DEFAULT '0',
+			  `Plan_Type` enum('period','views') NOT NULL DEFAULT 'period',
+			  `Period` int(11) NOT NULL DEFAULT '0',
+			  `Status` enum('active','approval','trash') NOT NULL DEFAULT 'active',
+			  PRIMARY KEY (`ID`),
+			  KEY `Position` (`Position`)
+			) DEFAULT CHARSET=utf8;"
+		);
+
+		$rlDb -> query("DROP TABLE IF EXISTS `". RL_DBPREFIX ."banners`");
+		$rlDb -> query("
+			CREATE TABLE `". RL_DBPREFIX ."banners` (
+			  `ID` int(11) NOT NULL AUTO_INCREMENT,
+			  `Plan_ID` int(3) DEFAULT '0',
+			  `Account_ID` int(11) DEFAULT '0',
+			  `Box` varchar(255) NOT NULL,
+			  `Date_release` int(10) NOT NULL DEFAULT '0',
+			  `Date_from` int(10) NOT NULL DEFAULT '0',
+			  `Date_to` int(10) NOT NULL DEFAULT '0',
+			  `Pay_date` int(10) NOT NULL,
+			  `Shows` int(11) NOT NULL DEFAULT '0',
+			  `Last_show` int(10) NOT NULL DEFAULT '0',
+			  `Link` varchar(255) NOT NULL,
+			  `Type` enum('image','flash','html') NOT NULL DEFAULT 'image',
+			  `Follow` enum('0','1') NOT NULL DEFAULT '0',
+			  `Html` mediumtext NOT NULL,
+			  `Image` varchar(100) NOT NULL,
+			  `Last_step` varchar(15) NOT NULL,
+			  `Status` enum('active','approval','pending','incomplete','expired') NOT NULL DEFAULT 'approval',
+			  `Cron` enum('0','1') NOT NULL DEFAULT '0',
+			  `Cron_notified` enum('0','1') NOT NULL DEFAULT '0',
+			  PRIMARY KEY (`ID`),
+			  KEY `Status` (`Status`),
+			  KEY `Account_ID` (`Account_ID`),
+			  KEY `Plan_ID` (`Plan_ID`)
+			) DEFAULT CHARSET=utf8;"
+		);
+
+		$rlDb -> query("DROP TABLE IF EXISTS `". RL_DBPREFIX ."banners_click`");
+		$rlDb -> query("
+			CREATE TABLE `". RL_DBPREFIX ."banners_click` (
+			  `ID` int(11) NOT NULL AUTO_INCREMENT,
+			  `Banner_ID` int(11) NOT NULL,
+			  `Hash` varchar(32) NOT NULL,
+			  `Country` varchar(3) NOT NULL,
+			  PRIMARY KEY (`ID`),
+			  KEY `Hash` (`Hash`)
+			) DEFAULT CHARSET=utf8;"
+		);
+
+		$rlDb -> query("ALTER TABLE `". RL_DBPREFIX ."blocks` ADD `Banners` MEDIUMTEXT NOT NULL");
+		$rlDb -> query("UPDATE `". RL_DBPREFIX ."lang_keys` SET `Module` = 'common' WHERE `Key` IN ('left','right','top','bottom','middle_right','middle_left')");
+
+		// create folder for banners
+		$reefless -> rlMkdir(RL_FILES .'banners');
+	]]>
+	</install>
+
+	<hooks>
+		<hook version="2.2.0" name="apExtBlocksUpdate">
+		<![CDATA[
+			global $rlDb, $field, $value, $id;
+
+			if ( $_GET['controller'] == 'banners' && $field == 'Status' )
+			{
+				$key = $rlDb -> getOne('Key', "`ID` = '{$id}'", 'blocks');
+				$sql = "UPDATE `". RL_DBPREFIX ."hooks` SET `Status` = '{$value}' WHERE `Name` = 'tplBetweenCategories' AND `Plugin` = 'banners_{$key}' LIMIT 1";
+				$rlDb -> query($sql);
+			}
+		]]>
+		</hook>
+		<hook name="apExtBlocksSql">
+		<![CDATA[
+			global $sql;
+
+			$operand = $_GET['controller'] == 'banners' ? '=' : '<>';
+			$sql = str_replace('LIMIT', "AND `T1`.`Plugin` {$operand} 'banners' LIMIT", $sql);
+		]]>
+		</hook>
+		<hook version="2.1.0" name="apExtBlocksData">
+		<![CDATA[
+			global $data, $key, $config;
+
+			if ( $_GET['controller'] == 'banners' )
+			{
+				if ( version_compare($config['rl_version'], '4.0.1', '>') )
+				{
+					foreach($data as $key => $box)
+					{
+						$boxInfo = unserialize($data[$key]['Banners']);
+						$data[$key]['banners_size'] = "{$boxInfo['width']} x {$boxInfo['height']}";
+						$data[$key]['banners_limit'] = $boxInfo['limit'];
+					}
+				}
+				else
+				{
+					$boxInfo = unserialize($data[$key]['Banners']);
+					$data[$key]['banners_size'] = "{$boxInfo['width']} x {$boxInfo['height']}";
+					$data[$key]['banners_limit'] = $boxInfo['limit'];
+				}
+			}
+		]]>
+		</hook>
+		<hook name="apExtTransactionsSql">
+		<![CDATA[
+			global $sql;
+
+			$replace[0] = ", `BT1`.`Key` AS `Banner_plan` FROM ";
+			$replace[1] = "LEFT JOIN `". RL_DBPREFIX ."banner_plans` AS `BT1` ON `T1`.`Plan_ID` = `BT1`.`ID` WHERE ";
+			$sql = str_replace(array('FROM', 'WHERE'), $replace, $sql);
+		]]>
+		</hook>
+		<hook version="2.1.0" name="apExtTransactionsData">
+		<![CDATA[
+			global $data, $key, $lang, $config;
+
+			if ( version_compare($config['rl_version'], '4.0.1', '>') )
+			{
+				foreach($data as $key => $transaction)
+				{
+					if ( $data[$key]['Service'] == 'banners' )
+					{
+						$planName = $data[$key]['Banner_plan'] ? $lang["banner_plans+name+{$data[$key]['Banner_plan']}"] : $lang['banners_transactionsPlanRemoved'];
+						$item = $data[$key]['Item_ID'] ? "{$lang['banners_planType']} (#{$data[$key]['Item_ID']})" : $lang['item_not_available'];
+						$data[$key]['Item'] = "{$item}|{$planName}";
+					}
+				}
+			}
+			else
+			{
+				if ( $data[$key]['Service'] == 'banners' )
+				{
+					$planName = $data[$key]['Banner_plan'] ? $lang["banner_plans+name+{$data[$key]['Banner_plan']}"] : $lang['banners_transactionsPlanRemoved'];
+					$item = $data[$key]['Item_ID'] ? "{$lang['banners_planType']} (#{$data[$key]['Item_ID']})" : $lang['item_not_available'];
+					$data[$key]['Item'] = "{$item}|{$planName}";
+				}
+			}
+		]]>
+		</hook>
+		<hook name="phpPaymentHistoryLoop">
+		<![CDATA[
+			global $rlDb, $transactions, $key, $lang;
+
+			if ( $transactions[$key]['Service'] == 'banners' )
+			{
+				$sql  = "SELECT `T1`.`ID`, `T2`.`Key` FROM `". RL_DBPREFIX ."banners` AS `T1` ";
+				$sql .= "LEFT JOIN `". RL_DBPREFIX ."banner_plans` AS `T2` ON `T1`.`Plan_ID` = `T2`.`ID` ";
+				$sql .= "WHERE `T1`.`ID` = '{$transactions[$key]['Item_ID']}' LIMIT 1";
+				$bannerInfo = $rlDb -> getRow($sql);
+
+				$planName = $lang["banner_plans+name+{$bannerInfo['Key']}"];
+				$transactions[$key]['plan_info'] = $planName ? "{$planName} ({$lang['banners_planType']})" : false;
+				$transactions[$key]['item_info'] = $lang["banners+name+{$bannerInfo['ID']}"];
+			}
+		]]>
+		</hook>
+		<hook version="2.3.1" name="specialBlock">
+		<![CDATA[
+			$GLOBALS['reefless'] -> loadClass('Banners', null, 'banners');
+			$GLOBALS['rlBanners'] -> prepareBannersList();
+			$GLOBALS['rlXajax'] -> registerFunction(array('bannerClick', $GLOBALS['rlBanners'], 'ajaxBannerClick'));
+		]]>
+		</hook>
+		<hook name="tplHeader">
+		<![CDATA[
+			echo '<link href="'. RL_PLUGINS_URL .'banners/static/style.css" type="text/css" rel="stylesheet" />';
+		]]>
+		</hook>
+		<hook name="cronAdditional">
+		<![CDATA[
+			$GLOBALS['reefless'] -> loadClass('Banners', null, 'banners');
+			$GLOBALS['rlBanners'] -> cron();
+		]]>
+		</hook>
+	</hooks>
+
+	<emails version="2.1.0">
+		<email version="2.1.0" key="banners_admin_banner_added" subject="New banner was added at {site_name}">
+		<![CDATA[
+New banner was added at {site_name}.
+<b><u>Details</u></b>
+Owner: <b>{username}</b>,
+Creation Date: <b>{date}</b>,
+Status: <b>{status}</b>,
+Link: {link}]]>
+		</email>
+		<email version="2.1.0" key="banners_banner_activated" subject="Banner has been activated in {site_name}">
+		<![CDATA[
+Dear {username},
+
+Your banner in {site_name} was activated.
+
+______________________________
+Thank you,
+{site_name}
+Administration Team
+		]]>
+		</email>
+		<email version="2.1.0" key="banners_banner_deactivated" subject="Banner has been deactivated in {site_name}">
+		<![CDATA[
+Dear {username},
+
+Your banner in {site_name} was deactivated by administrator.
+Please contact site administrators to get details about this issue.
+{site_email}
+
+______________________________
+Thank you,
+{site_name}
+Administration Team
+		]]>
+		</email>
+		<email version="2.1.0" key="banners_cron_banner_expired" subject="Your banner has been expired on {site_name}">
+		<![CDATA[
+Dear {username},
+
+Your banner on {site_name} has been expired.
+
+______________________________
+Thank you,
+{site_name}
+Administration Team
+		]]>
+		</email>
+		<email version="2.1.0" key="banners_payment_accepted" subject="Payment has been successfully accepted">
+		<![CDATA[
+Dear {username},
+
+Your payment has been successfully accepted
+<u>Payment details:</u>
+Gateway: {gateway}
+Transaction ID: {txn}
+Item: {item}
+Item Price: {price}
+Date: {date}
+
+______________________________
+Thank you,
+{site_name}
+Administration Team
+		]]>
+		</email>
+		<email version="2.1.0" key="banners_admin_banner_paid" subject="Banner was paid at {site_name}">
+		<![CDATA[
+Payment was successfully accepted:
+<u>Payment details:</u>
+Owner: <b>{username}</b>
+Banner ID: <b>{id}</b>
+Gateway: <b>{gateway}</b>
+Transaction ID: <b>{txn}</b>
+Item: <b>{item}</b>
+Item Price: <b>{price}</b>
+Date: <b>{date}</b>
+
+Check Transactions manager to check this payment.
+		]]>
+		</email>
+		<email version="2.1.0" key="banners_admin_banner_edited" subject="Banner has been edited at {site_name}">
+		<![CDATA[
+Banner has been edited at {site_name}.
+<b><u>Details</u></b>
+Owner: <b>{username}</b>,
+Creation Date: <b>{date}</b>,
+Status: <b>{status}</b>,
+Link: {link}
+		]]>
+		</email>
+	</emails>
+	<pages>
+		<page key="my_banners" name="My Banners" type="system" path="my-banners" controller="my_banners" menus="2" tpl="1" login="1"><![CDATA[]]></page>
+		<page key="add_banner" name="Add a Banner" type="system" path="add-banner" controller="add_banner" menus="" tpl="1" login="1"><![CDATA[]]></page>
+		<page version="2.1.0" key="banners_renew" name="Renew a Banner Plan" type="system" path="renew-banner-plan" controller="renew" tpl="1" login="1"><![CDATA[]]></page>
+		<page version="2.1.0" key="banners_edit_banner" name="Edit a Banner" type="system" path="edit-banner" controller="edit_banner" tpl="1" login="1"><![CDATA[]]></page>
+	</pages>
+	<configs version="2.1.0" key="banners" name="Banners">
+		<![CDATA[]]>
+		<config version="2.1.0" key="banners_auto_approval" name="Auto approval of banner" type="bool"><![CDATA[1]]></config>
+	</configs>
+	<phrases>
+		<phrase key="banners_listOfBanners" module="admin"><![CDATA[List of banners]]></phrase>
+		<phrase key="banners_listOfPlans" module="admin"><![CDATA[List of plans]]></phrase>
+		<phrase key="banners_listOfBoxes" module="admin"><![CDATA[List of boxes]]></phrase>
+		<phrase key="banners_addPlan" module="admin"><![CDATA[Add a plan]]></phrase>
+		<phrase key="banners_addBanner" module="common"><![CDATA[Add a banner]]></phrase>
+		<phrase key="banners_addBox" module="admin"><![CDATA[Add a box]]></phrase>
+		<phrase key="banners_editPlan" module="admin"><![CDATA[Edit a plan]]></phrase>
+		<phrase version="2.1.0" key="banners_editBanner" module="common"><![CDATA[Edit banner]]></phrase>
+		<phrase key="banners_editBox" module="admin"><![CDATA[Edit box]]></phrase>
+		<phrase key="banners_bannersTitleOfManager" module="ext"><![CDATA[Banner Manager]]></phrase>
+		<phrase key="banners_bannerBoxesTitleOfManager" module="ext"><![CDATA[Banner Box Manager]]></phrase>
+		<phrase key="banners_bannerPlansTitleOfManager" module="ext"><![CDATA[Banner Plan Manager]]></phrase>
+		<phrase key="banners_bannerLiveFor" module="admin"><![CDATA[Banners live for]]></phrase>
+		<phrase key="banners_bannerLiveForHint" module="common"><![CDATA[Enter <b>0</b> to make the banner active for an unlimited period]]></phrase>
+		<phrase version="2.1.0" key="banners_bannerLiveForHintViews" module="common"><![CDATA[Enter <b>0</b> to make the banner active for an unlimited views]]></phrase>
+		<phrase key="banners_bannerLink" module="common"><![CDATA[Link]]></phrase>
+		<phrase key="banners_bannerType" module="common"><![CDATA[Banner type]]></phrase>
+		<phrase key="banners_bannerType_image" module="common"><![CDATA[Image]]></phrase>
+		<phrase key="banners_bannerType_flash" module="common"><![CDATA[Flash]]></phrase>
+		<phrase version="2.1.0" key="banners_bannerType_html" module="common"><![CDATA[HTML]]></phrase>
+		<phrase key="banners_bannerBox" module="common"><![CDATA[Banner box]]></phrase>
+		<phrase key="banners_boxes" module="admin"><![CDATA[Boxes]]></phrase>
+		<phrase key="banners_boxesDesc" module="admin"><![CDATA[Check the boxes to activate them for the plan]]></phrase>
+		<phrase key="banners_showCountries" module="admin"><![CDATA[Available to]]></phrase>
+		<phrase key="banners_addBoxHint" module="admin"><![CDATA[Click [here] to add a banner box]]></phrase>
+		<phrase key="banners_addPlanHint" module="admin"><![CDATA[Click [here] to add a banner plan]]></phrase>
+		<phrase key="banners_ownerDoesNotExistsNotice" module="admin"><![CDATA[The Owner does not exist, please check the field]]></phrase>
+		<phrase key="banners_boxSettingsLimit" module="admin"><![CDATA[Number of banners at a time]]></phrase>
+		<phrase key="banners_boxSettingsLimitDesc" module="admin"><![CDATA[Sets a number of banners displayed in the box at a time]]></phrase>
+		<phrase key="banners_boxSettingsWidth" module="admin"><![CDATA[Width]]></phrase>
+		<phrase key="banners_boxSettingsHeight" module="admin"><![CDATA[Height]]></phrase>
+		<phrase key="banners_bannerSettings" module="common"><![CDATA[Settings]]></phrase>
+		<phrase key="banners_bannerPlansEmpty" module="common"><![CDATA[There are no banner plans, please contact the Administrator to resolve this issue]]></phrase>
+		<phrase key="banners_bannerLastShow" module="ext"><![CDATA[Last displayed]]></phrase>
+		<phrase key="banners_bannerShows" module="common"><![CDATA[Shows]]></phrase>
+		<phrase key="banners_bannerNeverShow" module="ext"><![CDATA[Never]]></phrase>
+		<phrase key="banners_bannerNeverShow" module="frontEnd"><![CDATA[Never]]></phrase>
+		<phrase key="banners_planType" module="common"><![CDATA[Banners]]></phrase>
+		<phrase key="banners_bannerBoxNotice" module="common"><![CDATA[Position: <b>[side]</b>, Size: <b>[width]</b>px x <b>[height]</b>px]]></phrase>
+		<phrase key="banners_transactionsPlanRemoved" module="admin"><![CDATA[The plan has been removed]]></phrase>
+		<phrase key="banners_noBannersHere" module="frontEnd"><![CDATA[No banners added yet. Please [click] to add a new one]]></phrase>
+		<phrase key="banners_bannerClicks" module="common"><![CDATA[Clicks]]></phrase>
+		<phrase key="banners_banner" module="common"><![CDATA[Banners]]></phrase>
+		<phrase key="banners_sortBy" module="frontEnd"><![CDATA[Sort banners by]]></phrase>
+		<phrase key="banners_noticeBannerDeleted" module="common"><![CDATA[The banner has been successfully removed]]></phrase>
+		<phrase version="2.1.0" key="banners_noticeAfterBannerAdding" module="common"><![CDATA[Thank you! Your banner has been successfully added and activated.]]></phrase>
+		<phrase version="2.1.0" key="banners_noticeAfterBannerAddingPending" module="common"><![CDATA[Thank you! Your banner has been successfully added and is awaiting to be reviewed by the Administrator.]]></phrase>
+		<phrase key="banners_addOneMoreBanner" module="common"><![CDATA[Click [here] to add another banner]]></phrase>
+		<phrase key="banners_noticeDeleteEmptyBannerPlan" module="admin"><![CDATA[Are you sure you want to remove <b>{plan}</b> banner plan? The banner will be removed without being moved to the Trash Box]]></phrase>
+		<phrase key="banners_deleteBannersPlan" module="admin"><![CDATA[Removing Plan]]></phrase>
+		<phrase key="banners_preBannerPlanDeleteNotice" module="admin"><![CDATA[The <b>{plan}</b> banner plan contains:]]></phrase>
+		<phrase key="banners_fullBannersPlanDelete" module="admin"><![CDATA[Remove the banner plan with all related data listed above]]></phrase>
+		<phrase key="banners_deleteBannersBox" module="admin"><![CDATA[Removing Box]]></phrase>
+		<phrase key="banners_noticeDeleteEmptyBannerBox" module="admin"><![CDATA[Are you sure you want to remove <b>{box}</b> banner box?]]></phrase>
+		<phrase key="banners_fullBannersBoxDelete" module="admin"><![CDATA[Remove the banner box with all related data listed above]]></phrase>
+		<phrase key="banners_preBannerBoxDeleteNotice" module="admin"><![CDATA[The <b>{box}</b> banner box contains:]]></phrase>
+		<phrase key="banners_managePictures" module="admin"><![CDATA[Manage Pictures]]></phrase>
+		<phrase key="banners_bannerDetails" module="admin"><![CDATA[Banner Details]]></phrase>
+		<phrase key="banners_bannerAdded" module="admin"><![CDATA[The banner has been successfully added]]></phrase>
+		<phrase key="banners_bannerEdited" module="admin"><![CDATA[The banner has been successfully edited]]></phrase>
+		<phrase key="bannersNoticePaymentCanceled" module="frontEnd"><![CDATA[Your payment has been canceled, please contact the site administrator for getting details]]></phrase>
+		<phrase key="banners_bannerPlansEmptyCP" module="admin"><![CDATA[There are no banner plans, Please add a new one]]></phrase>
+		<phrase key="banners_bannerBoxesEmptyCP" module="admin"><![CDATA[There are no banner boxes, Please [click] to add a new one]]></phrase>
+		<phrase key="banners_bannerEdit" module="frontEnd"><![CDATA[Edit the banner]]></phrase>
+		<phrase key="banners_allowToAll" module="admin"><![CDATA[All countries]]></phrase>
+		<phrase key="banners_allowToSelected" module="admin"><![CDATA[Selected countries]]></phrase>
+		<phrase key="banners_addMedia" module="frontEnd"><![CDATA[Add a Media]]></phrase>
+		<phrase key="banners_changeBannersBoxAlert" module="admin"><![CDATA[If you change the: Side, Width or Height; all related banners on this box will set status Approval]]></phrase>
+		<phrase key="banners_boxLimit" module="ext"><![CDATA[Banners Limit]]></phrase>
+		<phrase key="banners_boxSize" module="ext"><![CDATA[Box Size]]></phrase>
+		<phrase key="banners_massActionsNotice" module="ext"><![CDATA[You are sure?]]></phrase>
+		<phrase key="banners_noticeBannerMassAction_activate" module="admin"><![CDATA[The all checked banners has been set as Active]]></phrase>
+		<phrase key="banners_noticeBannerMassAction_approve" module="admin"><![CDATA[The all checked banners has been set as Approved]]></phrase>
+		<phrase key="banners_noticeBannerMassAction_delete" module="admin"><![CDATA[The all checked banners has been successfully removed]]></phrase>
+		<phrase version="2.1.0" key="banners_addBannerContent" module="common"><![CDATA[Add a banner content]]></phrase>
+		<phrase version="2.1.0" key="banners_liveTypePeriod" module="common"><![CDATA[Period]]></phrase>
+		<phrase version="2.1.0" key="banners_liveTypeViews" module="common"><![CDATA[Views]]></phrase>
+		<phrase version="2.1.0" key="banners_waitingApproval" module="common"><![CDATA[The banner is awaiting to be approved by the Administrator.]]></phrase>
+		<phrase version="2.1.0" key="banners_renewPlan" module="common"><![CDATA[Renew Banner Plan]]></phrase>
+		<phrase version="2.1.0" key="banners_noticeBannerUpgraded" module="common"><![CDATA[Your banner plan has been successfully upgraded.]]></phrase>
+		<phrase version="2.1.0" key="banners_showsLeft" module="common"><![CDATA[Shows left]]></phrase>
+		<phrase version="2.1.0" key="banners_notice_banner_edited" module="common"><![CDATA[The banner has been successfully edited]]></phrase>
+		<phrase version="2.1.0" key="banners_unsaved_photos_notice" module="common"><![CDATA[You not have uploaded pictures, please upload picture.]]></phrase>
+		<phrase version="2.1.0" key="banners_errorSelectFlashFile" module="common"><![CDATA[Please select your Flash banner from computer.]]></phrase>
+		<phrase version="2.1.0" key="banners_errorFormatFlashFile" module="common"><![CDATA[Availability format <b>swf</b>, please upload banner in swf format.]]></phrase>
+		<phrase version="2.2.0" key="banners_boxBetweenCategories_side" module="admin"><![CDATA[<b>Between categories</b>]]></phrase>
+		<phrase version="2.2.0" key="banners_categoryBoxNoticeInGrid" module="admin"><![CDATA[You can´t change the value for this banners box.]]></phrase>
+		<phrase version="2.2.0" key="banners_changeBannersCategoryBoxAlert" module="admin"><![CDATA[If you change the: Width or Height; all related banners on this box will set status Approval]]></phrase>
+		<phrase version="2.2.0" key="banners_boxType" module="admin"><![CDATA[Box Type]]></phrase>
+		<phrase version="2.2.0" key="banners_boxType_default" module="admin"><![CDATA[Default]]></phrase>
+		<phrase version="2.2.0" key="banners_boxType_betweenCategories" module="admin"><![CDATA[Between categories]]></phrase>
+		<phrase version="2.2.0" key="banners_betweenCategories_field" module="admin"><![CDATA[Select category]]></phrase>
+		<phrase version="2.2.3" key="banners_plan_without_boxes" module="ext"><![CDATA[You cannot change status until you add a box to the plan. You have to add at least a box to make it work.]]></phrase>
+		<phrase version="2.3.0" key="banners_countries" module="admin"><![CDATA[Countries]]></phrase>
+		<phrase version="2.3.0" key="banners_excludeSelected" module="admin"><![CDATA[Exclude selected]]></phrase>
+		<phrase version="2.3.0" key="banners_changeBannerPlanNotice" module="ext"><![CDATA[If you change the plan at this stage the banner uploaded will be removed. Are you sure you want to proceed?]]></phrase>
+		<phrase version="2.3.2" key="banners_tag_nofollow" module="admin"><![CDATA[Use tag <b>Nofollow</b>:]]></phrase>
+	</phrases>
+	<uninstall>
+	<![CDATA[
+		$GLOBALS['reefless'] -> loadClass('Banners', null, 'banners');
+		$GLOBALS['rlBanners'] -> uninstall();
+	]]>
+	</uninstall>
+</plugin>

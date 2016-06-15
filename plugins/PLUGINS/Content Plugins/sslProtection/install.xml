@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="sslProtection">
+	<title>SSL Protection</title>
+	<description>allows to switch site pages to be under https (ssl)</description>
+	<author>Mike Fletcher</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>1.0.4</version>
+	<date>13.08.2012</date>
+	
+	<install>
+		<![CDATA[
+			$sql = "ALTER TABLE `".RL_DBPREFIX."pages` ADD `Https` ENUM( '1', '0' ) DEFAULT '0' NOT NULL";
+			$GLOBALS['rlDb'] -> query( $sql );
+		]]>
+	</install>
+
+	<hooks>
+		<hook name="phpSmartyClassFetch" version="1.0.4">
+			<![CDATA[
+				foreach( $GLOBALS['secure_pages'] as $spk => $spage )
+				{
+					$sfind[] = SEO_BASE.$spage['Path'].".html";
+					$sreplace[] = str_replace('http://', 'https://', SEO_BASE).$spage['Path'].".html";
+
+					$sfind[] = SEO_BASE.$spage['Path']."/";
+					$sreplace[] = str_replace('http://', 'https://', SEO_BASE).$spage['Path']."/";
+
+					$sfind[] = RL_MOBILE_HOME.$spage['Path']."/";
+					$sreplace[] = str_replace('http://', 'https://', RL_MOBILE_HOME).$spage['Path']."/";
+
+					$sfind[] = RL_MOBILE_HOME.$spage['Path'].".html";
+					$sreplace[] = str_replace('http://', 'https://', RL_MOBILE_HOME).$spage['Path'].".html";
+				}
+
+				if( in_array($GLOBALS['page_info']['Key'], array_keys($GLOBALS['secure_pages'])) )
+				{
+					$sfind[] = RL_LIBS_URL;
+					$sreplace[] = str_replace('http://', 'https://', RL_LIBS_URL);
+
+					$sfind[] = RL_PLUGINS_URL;
+					$sreplace[] = str_replace('http://', 'https://', RL_PLUGINS_URL);
+
+					$sfind[] = RL_TPL_BASE;
+					$sreplace[] = str_replace('http://', 'https://', RL_TPL_BASE);
+				}
+
+				$param1 = str_replace($sfind, $sreplace, $param1);
+			]]>
+		</hook>
+		<hook name="pageinfoArea" version="1.0.4">
+			<![CDATA[
+				global $secure_pages;
+
+				if( $GLOBALS['config']['secure_account_area'] )
+				{
+					$add_where = "OR FIND_IN_SET('2', `Menus`) ";
+				}
+				$tmp_secure_pages = $GLOBALS['rlDb'] -> fetch("*", array("Status" => 'active', "Https" => '1'), $add_where, null, 'pages');
+
+				foreach( $tmp_secure_pages as $pKey => $spage )
+				{
+					$secure_pages[ $spage['Key'] ] = $spage;
+				}
+
+				if( in_array($GLOBALS['page_info']['Key'], array_keys($secure_pages)) && !$_SERVER['HTTPS'] )
+				{
+					$GLOBALS['reefless'] -> loadClass('Mobile');
+					if( $GLOBALS['rlMobile'] -> isMobile )
+					{
+						$redirect = str_replace( 'http://', 'https://', RL_MOBILE_HOME );
+					}else
+					{
+						$redirect = str_replace( 'http://', 'https://', RL_URL_HOME );
+					}
+					$redirect .= substr($_SERVER['REQUEST_URI'], 1 );
+					$GLOBALS['reefless'] -> redirect(null, $redirect );
+				}			
+			]]>
+		</hook>
+		<hook name="apPhpPagesPost">
+			<![CDATA[
+				$_POST['https'] = $GLOBALS['info']['Https'];
+			]]>
+		</hook>
+		<hook name="apPhpPagesBeforeAdd">
+			<![CDATA[
+				$GLOBALS['data']['Https'] = $_POST['https'];	
+			]]>
+		</hook>
+		<hook name="apPhpPagesBeforeEdit">
+			<![CDATA[
+				$GLOBALS['update_data']['fields']['Https'] = $_POST['https'];
+			]]>
+		</hook>
+
+		<hook name="apTplPagesForm">
+			<![CDATA[
+				echo '<tr><td class="name">'.$GLOBALS['lang']['sp_page'].'</td><td class="field">';
+	
+				if( $_POST['https'] == '1' ){
+					$https_yes = 'checked="checked"';
+				}elseif( $_POST['https'] == '1' ){
+					$https_no = 'checked="checked"';
+				}else{			
+					$https_no = 'checked="checked"';
+				}
+
+				echo '<label><input '.$https_yes.' class="lang_add" type="radio" name="https" value="1" /> '.$GLOBALS['lang']['yes'].' </label>';
+				echo '<label><input '.$https_no.' class="lang_add" type="radio" name="https" value="0" /> '.$GLOBALS['lang']['no'].' </label></td></tr>';
+			]]>
+		</hook>		
+	</hooks>
+	
+	<configs key="sslProtection" name="SSL Protection">
+		<![CDATA[]]>
+		<config version="1.0.1" key="secure_account_area" name="Secure all account area pages" description="The option secures all pages of the account menu (Add a Listing, My Listings etc) with https in the user interface. To enable https for a particular page of the account menu you have to disable this option, go to Pages Manager, find a page that you want to secure, click on the Edit icon, and enable SSL secured page option. Likewise the SSL secured option can be enabled for any other page." values="" type="bool"><![CDATA[0]]></config>
+	</configs>
+
+	<phrases>
+		<phrase key="sp_page" module="admin"><![CDATA[SSL secured page]]></phrase>
+	</phrases>
+
+	<updates>
+		<update version="1.0.1"><![CDATA[]]></update>
+		<update version="1.0.2"><![CDATA[]]></update>
+		<update version="1.0.3"><![CDATA[]]></update>
+		<update version="1.0.4"><![CDATA[]]></update>
+	</updates>
+	
+	<uninstall><![CDATA[
+		$sql = "ALTER TABLE `".RL_DBPREFIX."pages` DROP `Https`";
+		$GLOBALS['rlDb'] -> query( $sql );
+	]]>
+	</uninstall>
+</plugin>

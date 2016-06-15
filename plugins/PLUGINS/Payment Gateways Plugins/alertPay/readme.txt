@@ -1,0 +1,3 @@
+Payza online payment provider is integrated into Flynax classifieds scripts as the FREE plugin.
+
+You may use Payza as the online payment provider to get secure online payments from your classified site’s members. Payza accepts credit cards and supports 23 currencies. Payza cooperates and works with local banks in 46 countries. Payza has customers in over 190 countries. Use Payza for Flynax classifieds software and you will reach your customers from From North America and Europe to the far Asia and Oceania

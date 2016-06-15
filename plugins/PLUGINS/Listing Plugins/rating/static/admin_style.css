@@ -1,0 +1,24 @@
+ul.lising_rating_ul
+{
+	padding: 20px 0 3px;
+}
+ul.lising_rating_ul li
+{
+	width: 21px;
+	height: 21px;
+	display: inline-block;
+	*display: inline;
+	*zoom: 1;
+	background: url('stars.png') -20px -42px no-repeat;
+	padding: 0!important;
+	position: relative;
+}
+ul.lising_rating_ul li.active
+{
+	background-position: -20px -21px;
+}
+ul.lising_rating_ul li div
+{
+	height: 100%;
+	background: url('stars.png') -20px -21px no-repeat;
+}

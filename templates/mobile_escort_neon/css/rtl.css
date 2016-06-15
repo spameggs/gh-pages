@@ -1,0 +1,331 @@
+/* RTL direction styles */
+body
+{
+	direction: rtl;
+}
+
+.fleft
+{
+	float: right;/* reversed */
+}
+.fright
+{
+	float: left;/* reversed */
+}
+.ralign
+{
+	text-align: left!important;/* reversed */
+}
+.lalign
+{
+	text-align: right!important;/* reversed */
+}
+
+/* bread crumbs */
+ul#bread_crumbs li
+{
+	float: right;
+}
+/* bread crumbs end */
+
+/* tabs */
+div.tabs ul li
+{
+	float: right;
+}
+/* default */
+div.tabs ul li span.center
+{
+	float: right;
+}
+/* tabs end */
+
+div#listings div.item div.f-label,
+div#agencies div.featured div.f-label
+{
+	left: auto;
+	right: 0;
+	border-radius: 0 0 0 15px;
+}
+
+div#listings div.favorite_circle
+{
+	right: auto;
+	left: 0;
+	margin: -3px 0 0 -3px;
+}
+div#listings div.favorite_circle span
+{
+	margin: 5px 5px 0 0;
+}
+
+div#listings div.item div.photo div.counter,
+div#agencies div.item td.photo div.counter
+{
+	left: auto;
+	right: 0;
+	margin: 0 3px 3px 0;
+	border-radius: 3px 0 0 0;
+	border-top: 2px #4f1f50 solid;
+	border-right: 0;
+	border-left: 2px #4f1f50 solid;
+}
+
+div#spray_left
+{
+	left: auto;
+	right: -5px;
+}
+div#spray_right
+{
+	right: auto;
+	left: 0;
+}
+
+/* quick saerch */
+#qucik_search
+{
+	padding: 0 28px 2px 8px;
+	text-align: left;
+	background-position: right -236px;
+}
+@media only screen and (-webkit-min-device-pixel-ratio: 2) {
+	#qucik_search
+	{
+		background-position: right -233px;
+	}
+}
+/* quick saerch end */
+
+div#carousel ul li
+{
+	float: right;
+	margin: 0 0 0 5px;
+}
+
+ul#main_menu li.more,
+ul#main_menu li.more_active
+{
+	right: auto;
+	left: 0;
+}
+ul#main_menu_more
+{
+	right: auto;
+	left: 0;
+}
+ul#main_menu_more li
+{
+	list-style: none;
+	padding: 9px 7px 2px 10px;
+}
+
+ul#user_menu li a img
+{
+	background-position: right -176px;
+	right: auto;
+	left: 10px;
+}
+@media only screen and (-webkit-min-device-pixel-ratio: 2) {
+	ul#user_menu li a img
+	{
+		background-position: 0 -192px;
+	}
+}
+
+#languages > div > div > span
+{
+	padding: 4px 10px 4px 5px;
+}
+#languages > div > div img
+{
+	margin: 3px 5px 0 3px;
+}
+.listing_group table>tbody>tr>td.name
+{
+	padding: 3px 0 3px 5px;
+}
+div#scroll ul.inner li
+{
+	padding: 0 0 0 5px;
+}
+
+div#thumbnails div.prev
+{
+	left: auto;
+	right: 0;
+	background-position: -18px -144px;
+}
+div#thumbnails div.next
+{
+	left: 0;
+	right: auto;
+	background-position: 3px -144px;
+}
+@media only screen and (-webkit-min-device-pixel-ratio: 2) {
+	div#thumbnails div.prev
+	{
+		background-position: -15px -136px;
+	}
+	div#thumbnails div.next
+	{
+		background-position: 6px -136px;
+	}
+}
+
+.dealers ul li td.image div.count
+{
+	left: auto;
+	right: 0;
+	margin: 0 2px 2px 0;
+	
+	border-right: 0;
+	border-left: 2px #4f1f50 solid;
+	border-radius: 3px 0 0 0;
+}
+.dealers ul li td.image div.count a
+{
+	text-decoration: none;
+	display: block;
+	padding: 2px 3px;
+}
+@media only screen and (-webkit-min-device-pixel-ratio: 2) {
+	select
+	{ 
+		background-image: url('../img/x2/gallery5.png'), -webkit-linear-gradient(top,  rgba(65,30,66,1) 0%,rgba(65,30,66,1) 50%,rgba(49,20,49,1) 51%,rgba(49,20,49,1) 100%);
+		background-position: left -261px, 0;
+		background-size: 48px auto, 100%;
+		padding: 2px 10px 2px 5px;
+	}
+}
+
+/* account features */
+table.steps td.active
+{
+	background: url('../img/gallery.png') left -632px no-repeat;
+}
+table.steps td div,
+table.steps td.active div
+{
+	margin: 0 0 0 5px;
+}
+@media only screen and (-webkit-min-device-pixel-ratio: 2) {
+	table.steps td.active
+	{
+		background: url('../img/x2/gallery5.png') left -609px no-repeat;
+		background-size: 48px auto;
+	}
+}
+label
+{
+	padding: 0 0 0 10px;
+}
+table.submit .name
+{
+	padding: 8px 5px 0 8px;
+}
+div.ml_tabs>ul li
+{
+	float: right;
+	margin: 0 0 0 5px;
+}
+table.plans td.radio
+{
+	padding: 22px 5px 0 0;
+}
+table.plans td.info
+{
+	padding: 5px 10px 0 0;
+}
+div#fileupload span.draft
+{
+	margin: 0 0 10px 10px;
+}
+div#fileupload span.active,
+div#fileupload span.hover
+{
+	margin: 0 0 5px 10px;
+}
+div.canvas img.delete,
+.ui-sortable img.delete,
+.template-download img.delete,
+.ui-sortable img.cancel,
+.files img.cancel
+{
+	top: 2px;
+	right: auto;
+	left: 2px;
+}
+div#fileupload img.loaded
+{
+	right: auto;
+	left: 0;
+}
+div#fileupload img.edit
+{
+	right: auto;
+	left: 0;
+	margin: 2px 0 0 4px;
+}
+div#fileupload span.progress {
+    margin: 0 0 28px;
+}
+div.message_feed a.new,
+ul.account_menu a.new
+{
+	right: auto;
+	left: -2px;
+}
+div.my_listings div.item td.image
+{
+    padding: 0 0 0 10px;
+}
+div.my_listings div.item td.details
+{
+	padding: 0 0 0 20px;
+}
+table.info td.name
+{
+	padding: 0 0 0 10px;
+}
+img.delete_highlight
+{
+	right: auto;
+	left: 0;
+}
+table.list div.price
+{
+	margin: 0 0 5px 10px;
+}
+table.list>tbody>tr.body>td
+{
+	padding: 8px 10px 10px 0;
+}
+table.list>tbody>tr.header>td
+{
+	padding: 5px 10px 4px 5px;
+}
+table.list>tbody>tr>td.last
+{
+	padding-left: 10px!important;
+}
+div.fieldset span
+{
+	padding: 0 0 0 10px;
+}
+td.message_cell
+{
+	padding: 0 0 0 20px;
+}
+table.plans tr.active td.radio
+{
+	border-radius: 0 5px 5px 0!important;
+}
+table.plans tr.active td.info
+{
+	border-radius: 5px 0 0 5px!important;
+}
+a.nav_icon
+{
+	margin: 0 0 0 2px;
+}

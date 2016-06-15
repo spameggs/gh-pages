@@ -1,0 +1,10 @@
+/* RTL report broken listing styles */
+
+a.reportBroken img,
+a.removeBroken img
+{
+	margin-left: 0;
+	margin-right: 4px;
+}
+
+/* RTL report broken listing styles end */

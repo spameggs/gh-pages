@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="listings_carousel">
+	<title>Listings Carousel</title>
+	<description>Listings Carousel</description>
+	<author>Dmitry Azavanichus</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>3.0.1</version>
+	<date>20.02.2012</date>
+	<controller>listings_carousel</controller>
+
+	<files>
+		<file>rlListingsCarousel.class.php</file>
+		<file>carousel.block.tpl</file>		
+		<file>admin/listings_carousel.tpl</file>
+		<file>admin/listings_carousel.inc.php</file>
+	</files>
+	
+	<install>
+		<![CDATA[
+			global $rlDb;
+			
+			$rlDb -> query( "
+				CREATE TABLE `". RL_DBPREFIX ."listings_carousel` (
+				  `ID` int(11) NOT NULL AUTO_INCREMENT,
+				  `Direction` enum('vertical','horizontal') NOT NULL DEFAULT 'horizontal',
+				  `Block_IDs` varchar(255) NOT NULL,
+				  `Number` int(10) NOT NULL,
+				  `Delay` int(10) NOT NULL,
+				  `Per_slide` int(10) NOT NULL,			  
+				  `Visible` int(10) NOT NULL,			  
+				  `Round` enum('0','1') NOT NULL DEFAULT '1',
+				  `Status` varchar(10) NOT NULL,
+				  PRIMARY KEY (`ID`)
+				) DEFAULT CHARSET=utf8;" );
+		]]>
+	</install>
+	
+	<hooks>
+		<hook name="tplHeader"><![CDATA[
+			if ( !defined('RL_MOBILE') )
+			{
+				echo '<link href="'.RL_PLUGINS_URL.'listings_carousel/static/carousel.css" type="text/css" rel="stylesheet" />';
+				echo '<script type="text/javascript" src="'.RL_PLUGINS_URL.'listings_carousel/static/carousel.js"></script>';
+				echo '<script type="text/javascript">var rlCarousel = new Array();</script>';
+			}
+		]]></hook>
+		<hook name="init"><![CDATA[
+			if ( !defined('RL_MOBILE') )
+			{
+				global $rlSmarty;
+				if ( !$_REQUEST['xjxfun'] )
+				{
+					unset($_SESSION['carousel']);
+				}	
+				$carousel_options = "";			
+				$rlSmarty -> assign("carousel_options", $carousel_options);
+			}
+		]]></hook>
+		<hook name="specialBlock"><![CDATA[
+			if ( !defined('RL_MOBILE') )
+			{
+				global $rlXajax,$carousel_options;
+				if($carousel_options)
+				{
+					$GLOBALS['reefless'] -> loadClass('ListingsCarousel', null, 'listings_carousel');
+					$GLOBALS["rlListingsCarousel"] -> changeContentBlock($carousel_options);
+					$rlXajax -> registerFunction( array( 'loadListings', $GLOBALS['rlListingsCarousel'], 'ajaxLoadListings' ) );
+				}
+			}
+		]]></hook>
+		<hook name="listingsAfterSelectFeatured"><![CDATA[
+			if ( !defined('RL_MOBILE') )
+			{
+				global $blocks, $carousel_options;
+				$id = $blocks[$param2]['ID'];
+				if($carousel_options[$id])
+				{
+					foreach($param3 as $key => $val)
+					{
+					   $_SESSION['carousel'][$param2][] =  $val['ID'];
+					}
+				}
+			}
+		]]></hook>
+		<hook name="listingsModifyWhereFeatured"><![CDATA[
+			if ( !defined('RL_MOBILE') )
+			{
+				global $blocks, $carousel_options;
+				$id = $blocks[$param2]['ID'];
+				if($carousel_options[$id])
+				{
+					$param3 = $carousel_options[$id]['Visible'];
+				}
+			}
+		]]></hook>
+	</hooks>
+	
+	<phrases>
+		<phrase key="listings_carousel_ext_assiged_boxes" module="ext"><![CDATA[Assigned boxes]]></phrase>		
+		<phrase key="listings_carousel_ext_direction" module="ext"><![CDATA[Direction]]></phrase>		
+		<phrase key="listings_carousel_ext_number_of_listings" module="ext"><![CDATA[Total listings]]></phrase>		
+		<phrase key="listings_carousel_ext_delay" module="ext"><![CDATA[Delay]]></phrase>		
+		<phrase key="listings_carousel_ext_per_slide" module="ext"><![CDATA[Per Slide]]></phrase>		
+		<phrase key="listings_carousel_ext_visible" module="ext"><![CDATA[Visible]]></phrase>
+
+		<phrase key="listings_carousel_direction" module="admin"><![CDATA[Direction]]></phrase>  
+		<phrase key="listings_carousel_vertical" module="admin"><![CDATA[Vertical]]></phrase>  
+		<phrase key="listings_carousel_horizontal" module="admin"><![CDATA[Horizontal]]></phrase>  
+		<phrase key="listings_carousel_box" module="admin"><![CDATA[Carousel box]]></phrase>  
+		<phrase key="listings_carousel_disabled_box" module="admin"><![CDATA[Select a box for carousel (greyed out boxes cannot be used for specified direction)]]></phrase>  
+		<phrase key="listings_carousel_number" module="admin"><![CDATA[Total listings]]></phrase>  
+		<phrase key="listings_carousel_delay" module="admin"><![CDATA[Delay]]></phrase>  
+		<phrase key="listings_carousel_per_slide" module="admin"><![CDATA[Listings per Slide]]></phrase>  
+		<phrase key="listings_carousel_visible" module="admin"><![CDATA[Visible listings]]></phrase>  
+		<phrase key="listings_carousel_round" module="admin"><![CDATA[Cyclic rotation]]></phrase>   
+		<phrase key="listings_carousel_in_sec" module="admin"><![CDATA[in seconds]]></phrase>		
+	</phrases>
+
+	<uninstall>
+        <![CDATA[
+			global $rlDb;
+			$rlDb -> query( "DROP TABLE `". RL_DBPREFIX ."listings_carousel`" );
+		]]>
+	</uninstall>
+</plugin>

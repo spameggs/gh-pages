@@ -1,0 +1,128 @@
+/* cookies policy styles */
+div.cookies_absolute_div
+{
+	position: fixed !important;
+	width: 100%;
+	height: 100%;
+	z-index: 10000000;
+	top: 0;
+}
+div#cookies_policy_icon_bottom_left,
+div#cookies_policy_icon_bottom_right
+{
+	background: url('gallery.png') 0 0 no-repeat;
+	bottom: -21px;
+    cursor: pointer;
+    font-size: 23px;
+    font-weight: bold;
+    height: 35px;
+    left: -11px;
+    padding: 10px 0 15px 18px;
+    position: fixed;
+    width: 32px;
+    z-index: 999;
+}
+div#cookies_policy_icon_bottom_right
+{
+	left: auto;
+	right: -11px;
+}
+div#cookies_policy_bottom_left div#cookies_policy_big_form,
+div#cookies_policy_bottom_right div#cookies_policy_big_form
+{	
+	background: white;
+	border-radius: 5px;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.3);
+	font-size: 15px;
+	position: fixed;
+	z-index: 10001;
+	bottom: 15px;
+	left: 15px;
+	width: 250px;
+}
+div#cookies_policy_bottom_right div#cookies_policy_big_form
+{
+	left: auto;
+	right: 15px
+}
+div#cookies_policy_big_form div.header
+{
+	background: #ffcc00;
+	border-radius: 5px 5px 0 0;
+	color: black;
+	height: 34px;
+	font-size: 16px;
+}
+div#cookies_policy_big_form div.header div
+{
+	padding: 6px 10px 0 10px;
+}
+div#cookies_policy_big_form div.content
+{
+	color: #525252;
+	padding: 10px;
+}
+div#cookies_policy_big_form div.buttons_content
+{
+	text-align: center;
+	margin: 5px 5px 15px;
+}
+div#cookies_policy_big_form input.cookie_accept
+{
+	background: #96e806;
+	border: 0;
+	border-radius: 3px;
+	-webkit-box-shadow: 0px 1px 0px rgba(50, 50, 50, 0.75);
+	-moz-box-shadow:    0px 1px 0px rgba(50, 50, 50, 0.75);
+	box-shadow:         0px 1px 0px rgba(50, 50, 50, 0.75);
+	font-family: Arial;
+	font-size: 13px;
+	color: black;
+	text-decoration: none;
+	padding: 3px 15px 5px;
+	text-transform: capitalize;
+}
+div#cookies_policy_big_form input.cookie_accept:hover
+{
+	background: #A3F210;	
+}
+div#cookies_policy_big_form input.cookie_decline
+{
+	border: 0;
+	background: none;
+	color: #c15151;
+	font-family: Arial;
+	font-size: 13px;
+	text-decoration: underline;
+	text-transform: capitalize;
+	padding: 3px 15px 5px;
+}
+div#cookies_policy_big_form input.cookie_decline:hover
+{
+	text-decoration: none;
+}
+
+
+/* rtl version */
+div.cp-rtl div#cookies_policy_icon_bottom_left
+{
+	left: auto;
+	right: -11px;
+	padding: 10px 18px 15px 0;
+}
+div.cp-rtl div#cookies_policy_icon_bottom_right
+{
+	left: -11px;
+	right: auto;
+}
+div.cp-rtl div.cookies_policy_big_form_bottom_left
+{
+	right: 15px !important;
+	left: auto !important;
+}
+div.cp-rtl div.cookies_policy_big_form_bottom_right
+{
+	right: auto !important;
+	left: 15px !important;
+}
+/* rtl version end */

@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="vbulletin">
+	<title>vBulletin Bridge</title>
+	<description>Connects Flynax Software with vBulletin Forum</description>
+	<author>Alex</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>2.0.0</version>
+	<date>10.04.2012</date>
+	<controller>vbulletin</controller>
+
+	<files>
+		<file>admin/vbulletin.inc.php</file>
+		<file>admin/vbulletin.tpl</file>
+		<file>rlVBulletin.class.php</file>
+	</files>
+
+	<install>
+	<![CDATA[
+		global $rlDb;
+
+		$rlDb -> query("UPDATE `". RL_DBPREFIX ."blocks` SET `Page_ID` = '1', `Sticky` = '0' WHERE `Key` = 'vbulletin_new_posts' AND `Plugin` = 'vbulletin'");
+		$rlDb -> query("ALTER TABLE `". RL_DBPREFIX ."accounts` ADD `Password_salt` CHAR(30) NOT NULL AFTER `Password`");
+	]]>
+	</install>
+
+	<hooks>
+		<hook name="loginSuccess">
+		<![CDATA[
+			global $reefless, $username, $password, $config;
+
+			if ( $config['vbulletin_use_module'] )
+			{
+				$reefless -> loadClass('VBulletin', null, 'vbulletin');
+				$GLOBALS['rlVBulletin'] -> login($username, $password);
+			}
+		]]>
+		</hook>
+		<hook name="logOut">
+		<![CDATA[
+			global $reefless, $config;
+
+			if ( $config['vbulletin_use_module'] )
+			{
+				$reefless -> loadClass('VBulletin', null, 'vbulletin');
+				$GLOBALS['rlVBulletin'] -> logOut();
+			}
+		]]>
+		</hook>
+		<hook name="registerSuccess">
+		<![CDATA[
+			global $reefless, $profile_data, $config;
+
+			if ( $config['vbulletin_use_module'] )
+			{
+				$reefless -> loadClass('VBulletin', null, 'vbulletin');
+				$user = $GLOBALS['rlVBulletin'] -> createAccount($profile_data['username'], $profile_data['password'], $profile_data['mail']);
+
+				if ( $user !== false  )
+				{
+					if ( $config['account_auto_login'] && !$config['account_email_confirmation'] && !$config['account_admin_confirmation'] )
+					{
+						$GLOBALS['rlVBulletin'] -> login($profile_data['username'], $profile_data['password']);
+					}
+				}
+			}
+		]]>
+		</hook>
+		<hook name="apPhpConfigBottom">
+		<![CDATA[
+			global $reefless, $rlDb, $lang, $configs;
+
+			$groupID = (int)$rlDb -> getOne('ID', "`Key` = 'vbulletin_config' AND `Plugin` = 'vbulletin'", 'config_groups');
+			if ( !empty( $configs[$groupID] ) )
+			{
+				foreach( $configs[$groupID] as $key => $entry )
+				{
+					if ( $entry['Key'] == 'vbulletin_destination' )
+					{
+						$destinations[0] = array('ID' => 'inside', 'name' => 'Flynax directory');
+						$destinations[1] = array('ID' => 'outsite', 'name' => 'Forum directory');
+						$destinations[2] = array('ID' => 'parallel', 'name' => 'The same level as Flynax');
+						$destinations[3] = array('ID' => 'root', 'name' => 'Set a Root path');
+						$configs[$groupID][$key]['Values'] = $destinations;
+					}
+					else if ( $entry['Key'] == 'vbulletin_flynax_account_type' )
+					{
+						$accountTypes = array();
+						$tmpTypes = $rlDb -> getAll("SELECT `Key` FROM `". RL_DBPREFIX ."account_types` WHERE `Status` = 'active' ORDER BY `Position`");
+						foreach( $tmpTypes as $tKey => $tEntry )
+						{
+							array_push( $accountTypes, array( 'ID' => $tEntry['Key'], 'name' => $lang["account_types+name+{$tEntry['Key']}"] ) );
+						}
+						unset( $tmpTypes );
+
+						$configs[$groupID][$key]['Values'] = $accountTypes;
+					}
+					else if ( $entry['Key'] == 'vbulletin_user_group' )
+					{
+						$reefless -> loadClass('VBulletin', null, 'vbulletin');
+						$configs[$groupID][$key]['Values'] = $GLOBALS['rlVBulletin'] -> fetchUserGroups();
+					}
+				}
+			}
+		]]>
+		</hook>
+		<hook name="boot">
+		<![CDATA[
+			global $reefless, $block_keys, $rlSmarty, $config;
+
+			if ( array_key_exists('vbulletin_new_posts', $block_keys) && $config['vbulletin_use_module'] )
+			{
+				$reefless -> loadClass('VBulletin', null, 'vbulletin');
+				if ( false !== $posts = $GLOBALS['rlVBulletin'] -> newPosts() )
+				{
+					$rlSmarty -> assign('vbulletinPosts', $posts);
+					unset($posts);
+				}
+			}
+		]]>
+		</hook>
+		<hook name="phpLoginValidation">
+		<![CDATA[
+			global $config;
+
+			if ( $config['vbulletin_use_module'] )
+			{
+				if ( !empty($param2['Password_salt']) )
+				{
+					$param1 = $param4 ? $param3 : md5(md5($param3) . $param2['Password_salt'] );
+				}
+			}
+		]]>
+		</hook>
+	</hooks>
+
+	<blocks>
+		<block key="vbulletin_new_posts" name="New Forum Posts" side="left" type="smarty" tpl="1">
+		<![CDATA[
+			{include file=$smarty.const.RL_PLUGINS|cat:'vbulletin'|cat:$smarty.const.RL_DS|cat:'new_posts_box.tpl'}
+		]]>
+		</block>
+	</blocks>
+
+	<configs key="vbulletin_config" name="vBulletin Bridge">
+		<![CDATA[]]>
+		<config key="vbulletin_common" name="Common" type="divider"><![CDATA[]]></config>
+		<config key="vbulletin_use_module" name="vBulletin Bridge" type="bool"><![CDATA[1]]></config>
+		<config key="vbulletin_destination" name="vBulletin Location" description="" type="select"><![CDATA[root]]></config>
+		<config key="vbulletin_path" name="Directory Name" description="" type="text"><![CDATA[]]></config>
+		<config key="vbulletin_registation" name="Registration" type="divider"><![CDATA[]]></config>
+		<config key="vbulletin_flynax_account_type" name="Account Type" description="The selected account type will be used by default when creating an account with vBulletin" type="select"><![CDATA[buyer]]></config>
+		<config key="vbulletin_user_group" name="User Group" description="The selected user group will be used by default when creating an account with Flynax" type="select"><![CDATA[2]]></config>
+		<config key="vbulletin_additionals" name="Additionals" type="divider"><![CDATA[]]></config>
+		<config key="vbulletin_limit_posts" name="Number of posts in box" type="text" validate="int"><![CDATA[5]]></config>
+		<config key="vbulletin_number_symbols_posts" name="Maximum number of characters in posts" type="text" validate="int"><![CDATA[70]]></config>
+	</configs>
+
+	<phrases>
+	 	<phrase key="vbulletin_absentPostsInForum" module="frontEnd"><![CDATA[There are no posts]]></phrase>
+		<phrase key="vbulletin_settingsEmpty" module="admin"><![CDATA[Error: invalid vBulletin path! Please go to Configurations to set a correct vBulletin Path]]></phrase>
+		<phrase key="vbulletin_importButton" module="admin"><![CDATA[Import]]></phrase>
+		<phrase key="vbulletin_importAccountsFromVBulletin" module="admin"><![CDATA[Import accounts from vBulletin to Flynax]]></phrase>
+		<phrase key="vbulletin_importAccountsFromFlynax" module="admin"><![CDATA[Import accounts from Flynax to vBulletin]]></phrase>
+		<phrase key="vbulletin_tableHeaderTitle" module="admin"><![CDATA[Title]]></phrase>
+		<phrase key="vbulletin_tableHeaderAction" module="admin"><![CDATA[Action]]></phrase>
+		<phrase key="vbulletin_tableHeaderSuccessful" module="admin"><![CDATA[Successful]]></phrase>
+		<phrase key="vbulletin_tableHeaderExists" module="admin"><![CDATA[Already in use]]></phrase>
+		<phrase key="vbulletin_tableHeaderLastImport" module="admin"><![CDATA[Last imported]]></phrase>
+		<phrase key="vbulletin_installProductTitle" module="admin"><![CDATA[Install vBulletin Bridge on your Forum]]></phrase>
+		<phrase key="vbulletin_installProductNotice" module="admin"><![CDATA[vBulletin Bridge has been successfully installed]]></phrase>
+		<phrase key="vbulletin_importCompleteNotice" module="admin"><![CDATA[Importing has been completed; you can find import results in the table]]></phrase>
+	</phrases>
+
+	<uninstall>
+	<![CDATA[
+		global $reefless;
+
+		$reefless -> loadClass('VBulletin', null, 'vbulletin');
+		$GLOBALS['rlVBulletin'] -> unInstall();
+	]]>
+	</uninstall>
+
+</plugin>

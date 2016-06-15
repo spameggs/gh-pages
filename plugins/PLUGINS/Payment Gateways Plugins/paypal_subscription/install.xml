@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="paypal_subscription">
+	<title>PayPal Subscription</title>
+	<description>PayPal Subscription Payment Gateway</description>
+	<author>John Freeman</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>2.0.1</version>
+	<date>05.28.2012</date>
+	
+	<files>
+		<file>controllers/pre.gateway.php</file>
+		<file>controllers/post.gateway.php</file>
+		<file>icon.tpl</file>
+		<file>unsupscription_icon.tpl</file>
+		<file>static/paypal-subscription.png</file>
+	</files>
+	
+	<install><![CDATA[
+		global $rlDb;
+		
+		$fields = $rlDb -> getAll("SHOW COLUMNS FROM `".RL_DBPREFIX."listings`");
+		
+		foreach($fields as $field)
+		{
+			if ( $field['Field'] == 'Subscription_data' )
+			{
+				return;
+			}
+		}
+		
+		$sql = "ALTER TABLE `".RL_DBPREFIX."listings` ADD `Subscription_data` VARCHAR( 20 ) NOT NULL ;";
+		$rlDb -> query($sql);]]>
+	</install>
+	
+	<hooks>
+		<hook name="pageinfoArea"><![CDATA[
+			global $rlDb, $lang, $config, $page_info, $time_period, $time, $errors;
+			
+			if ( $page_info['Key'] != 'payment' )
+				return;
+			
+			$payment = $_SESSION['complete_payment'];
+
+			$gateway = empty($_POST['gateway']) ? $payment['gateway'] : $_POST['gateway'];
+			$plan_id = $payment['plan_info']['ID'];
+
+			if ( $gateway == 'paypal_subscription' )
+			{
+				$plan_period = $rlDb -> getOne( 'Listing_period', "`ID` = '{$plan_id}'", 'listing_plans');
+
+				if ( $plan_period == 7 )
+				{
+					$time_period = 'W';
+					$time = 1;
+				}
+				elseif ( $plan_period < 30 )
+				{
+					$time_period = 'D';
+					$time = $plan_period;
+				}
+				elseif ( $plan_period >= 30 && $plan_period < 365 )
+				{
+					$time_period = 'M';
+					$time = round($plan_period/30);
+				}
+				elseif ( $plan_period >= 365 )
+				{
+					$time_period = 'Y';
+					$time = round($plan_period/365);
+				}
+				else
+				{
+					$errors[] = $lang['paypal_subscription_error_date'];
+				}
+			}
+		]]></hook>
+		<hook name="paymentGateway"><![CDATA[
+			global $config;
+				
+			if ( $config['paypal_subscription_module'] && $config['paypal_subscription_account_email'] && $config['paypal_subscription_currency_code'] )
+			{
+            	$GLOBALS['rlSmarty'] -> display(RL_ROOT . 'plugins' . RL_DS . 'paypal_subscription' . RL_DS . 'icon.tpl');
+			}
+		]]></hook>
+		<hook name="myListingsafterStatFields"><![CDATA[
+			global $config;
+				
+			if ( $config['paypal_subscription_module'] && $config['paypal_subscription_account_email'] && $config['paypal_subscription_currency_code'] )
+			{
+				$GLOBALS['rlSmarty'] -> display(RL_ROOT . 'plugins' . RL_DS . 'paypal_subscription' . RL_DS . 'unsupscription_icon.tpl');
+			}
+		]]></hook>
+	</hooks>
+	
+	<phrases>
+		<phrase key="paypal_subscription_title" module="common"><![CDATA[PayPal Subscription]]></phrase>
+		<phrase key="paypal_subscription_error_date" module="common"><![CDATA[Invalid value for subscription regular period, please contact the Administrator or use another plan.]]></phrase>
+		<phrase key="paypal_unsubscribe" module="common"><![CDATA[Unsubscribe]]></phrase>
+		<phrase key="paypal_subscription_subscription" module="common"><![CDATA[Subscription]]></phrase>
+		<phrase key="paypal_subscription_caption" module="common"><![CDATA[PayPal]]></phrase>
+	</phrases>
+	
+	<config key="paypal_subscription_divider" name="Paypal Subscription gateway" type="divider" group="6"><![CDATA[]]></config>
+	<config key="paypal_subscription_module" name="Paypal Subscription module" type="bool" validate="" group="6"><![CDATA[1]]></config>	
+	<config key="paypal_subscription_test_mode" name="Sandbox mode" type="bool" validate="" group="6"><![CDATA[0]]></config>
+	<config key="paypal_subscription_account_email" name="Account e-mail address" type="text" group="6" validate=""><![CDATA[]]></config>
+	<config key="paypal_subscription_currency_code" name="Currency code" type="text" validate="" group="6"><![CDATA[USD]]></config>
+	
+	<updates>
+		<update version="2.0.1" files="controllers/post.gateway.php,unsupscription_icon.tpl"><![CDATA[]]></update>
+	</updates>
+</plugin>

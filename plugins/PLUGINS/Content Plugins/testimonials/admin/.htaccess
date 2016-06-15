@@ -1,0 +1,4 @@
+# allow all external requests for php
+<FilesMatch "\.php$">
+  ALLOW FROM ALL
+</FilesMatch>

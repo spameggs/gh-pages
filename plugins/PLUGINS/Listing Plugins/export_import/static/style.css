@@ -1,0 +1,144 @@
+/* import/export listings admin css */
+
+a.button_bar span.center_export
+{
+	padding: 0px 7px 0 25px;
+	background: url('gallery.png') 0 -3px no-repeat;
+}
+table.import td
+{
+	border: 5px white solid;
+	border-left: 0;
+}
+table.import tr.col-checkbox
+{
+	text-align: center;
+}
+table.import tr.col-checkbox div
+{
+	padding: 2px 0 3px;
+}
+table.import tr.header td > div
+{
+	background: #ebebeb;
+	border-bottom: 2px solid #C8C8C8;
+	padding: 8px 10px;
+	color: black;
+	font-style: italic;
+	white-space: nowrap;
+}
+table.import tr.header td > div > span
+{
+	display: inline-block;
+	*display: inline;
+	*zoom: 1;
+	max-width: 80px;
+	text-overflow: ellipsis;
+	overflow: hidden;
+    white-space: nowrap;
+    vertical-align: text-top;
+    cursor: default;
+}
+table.import tr.body td
+{
+	vertical-align: top;
+}
+table.import tr.body td > div
+{
+	margin: 2px 0px;
+	padding: 4px 10px 5px;
+	max-width: 250px;
+	overflow: auto;
+}
+table.export tr.body td > div
+{
+	white-space: nowrap;
+	word-wrap: break-word;
+	padding: 7px 10px 8px;
+}
+table.import tr.highlight td
+{
+	background: #f3f3f3;
+}
+table.import tr:not(.no_hover):hover td
+{
+	background: #fffeda;
+}
+table.import td.row-checkbox div
+{
+	padding-top: 10px!important;
+}
+table.export td.row-checkbox div
+{
+	padding-top: 7px!important;
+}
+table.import select optgroup
+{
+	font-weight: bold;
+	color: black;
+	font-style: normal;
+	padding: 2px 5px 2px 10px;
+}
+table.import select optgroup option
+{
+	padding: 1px 5px 2px 15px;
+	color: #3D3D3D;
+}
+table.import tr.disabled td,
+table.import tr td.disabled
+{
+	background: #ffeeee;
+}
+table.import tr.disabled td div,
+table.import tr td.disabled div
+{
+	opacity: 0.6;
+	filter: alpha(opacity=50);
+}
+
+div.progress
+{
+	margin-top: 5px;
+	padding: 1px;
+	height: 16px;
+	border: 1px solid #c3cddc;
+	background: white;
+}
+div.progress > div
+{
+	width: 0px;
+	height: 16px;
+	background: url('gallery.png') 0 -26px repeat-x;
+}
+td.counter
+{
+	width: 35px;
+	text-align: right;
+	font-size: 12px;
+}
+
+table.importing td.name
+{
+	width: 90px;
+	font-size: 12px;
+	padding: 0 5px 3px 0;
+}
+table.importing td.value
+{
+	padding: 0 5px 3px 0;
+}
+table.importing td.value > label
+{
+	font-size: 12px;
+}
+
+.import_note
+{
+	margin-top: 40px;
+	padding: 10px 0 5px;
+	border-top: 1px #e8e8e8 solid;
+}
+.import_note > div
+{
+	padding: 2px 0;
+}

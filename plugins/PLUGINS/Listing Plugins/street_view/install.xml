@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="street_view">
+	<title>Street View</title>
+	<description>Street View - Google Maps</description>
+	<author>John Freeman</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>1.1.0</version>
+	<date>06.04.2013</date>
+	
+	<files>
+		<file>tab.tpl</file>
+		<file>static/lib.js</file>
+	</files>
+	
+	<hooks>             
+        <hook name="listingDetailsBottom"><![CDATA[
+			global $reefless, $tabs, $lang;
+			$tabs['streetView'] = array(
+				'key' => 'streetView',
+				'name' => $lang['street_view_tab']
+			);
+		]]></hook>
+		
+		<hook name="listingDetailsBottomTpl">
+			<![CDATA[
+				global $rlSmarty, $config, $listing_type;
+				
+				$rlSmarty -> display( RL_PLUGINS . 'street_view' . RL_DS . 'tab.tpl' );
+			]]>
+		</hook>
+	</hooks>
+	
+	<phrases>
+		<phrase key="street_view_tab" module="common"><![CDATA[Street View]]></phrase>
+        <phrase key="street_view_no_location" module="common"><![CDATA[We were unable to find the requested address (<b>{address}</b>) via Google street view due to Google street view doesn't have data for this address.]]></phrase>
+        <phrase key="street_view_no_flash" module="common"><![CDATA[We were unable to show your the Google Street View due to your Browser does not support Flash Player.]]></phrase>
+	</phrases>
+</plugin>

@@ -1,0 +1,14 @@
+/* invoice plugin styles */
+
+img.paid
+{      
+	background: #D2E798;
+	padding-left: 5px;
+}
+img.unpaid
+{                 
+	background: #FF878A;
+	padding-left: 5px;
+}
+
+/* invoice plugin styles end */

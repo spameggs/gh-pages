@@ -1,0 +1,5 @@
+Flynax Facebook Connect plugin lets your users connect their real identities and Facebook accounts with your classifieds websites powered by Flynax classifieds scripts. This plugin gives significant opportunities to both users and classifieds web site owners.
+
+For users it can be convenient to connect their Facebook accounts with Flynax classifieds websites and stay connected with their friends and family. When user will connect to a classifieds website under his Facebook account the system will create a new account at that classified website for him and send the account details at user's Facebook email. Thus user will be able to use new account or continue using fConnect option at that classifieds website next time.
+
+For owners this Flynax plugin can help promote and socialize their classifieds websites with the help of Facebook social community facilities. To use Flynax Facebook Connect plugin owners of Flynax web site will need to add App ID and App Secret for their domains to configurations of the plugin in the backend. It will make their websites as trusted domains in the Facebook Connect network and after that the plugin will be available for use.

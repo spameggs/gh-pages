@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="paytpv">
+	<title>PayTPV</title>
+	<description>PayTPV payment gateway</description>
+	<author>Vladimir</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>1.0.0</version>
+	<date>25.12.2012</date>
+	<notice></notice>
+
+	<files>
+		<file>controllers/pre.gateway.php</file>
+		<file>controllers/post.gateway.php</file>
+		<file>gateway.tpl</file>
+	</files>
+
+	<hooks>
+		<hook name="paymentGateway">
+			<![CDATA[
+				if ( $GLOBALS['config']['paytpv_module'] )   
+				{
+                	$GLOBALS['rlSmarty'] -> display( RL_ROOT . 'plugins' . RL_DS . 'paytpv' . RL_DS . 'gateway.tpl' );
+				}
+			]]>
+		</hook>
+	</hooks>
+
+	<phrases>
+		<phrase key="paytpv_payment" module="common"><![CDATA[PayTPV payment gateway]]></phrase>
+	<phrases>
+
+	<config key="paytpv_divider" name="PayTPV payment gateway" description="" values="" type="divider" group="6"><![CDATA[]]></config>
+	<config key="paytpv_module" name="Enable PayTPV" description="" values="" type="bool" validate="" group="6"><![CDATA[1]]></config>
+	<config key="paytpv_account" name="Account" description="" values="" type="text" group="6" validate=""><![CDATA[]]></config>
+	<config key="paytpv_usercode" name="User Code" description="" values="" type="text" validate="" group="6"><![CDATA[]]></config>
+	<config key="paytpv_terminal" name="Terminal" description="" values="" type="text" validate="" group="6"><![CDATA[]]></config>
+	<config key="paytpv_password" name="Password" description="" values="" type="text" validate="" group="6"><![CDATA[]]></config>
+	<config key="paytpv_currency" name="Currency" description="" values="EUR,USD,GBP,JPY" type="select" validate="" group="6"><![CDATA[EUR]]></config>
+</plugin>

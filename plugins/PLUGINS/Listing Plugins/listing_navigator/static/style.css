@@ -1,0 +1,33 @@
+/* listing navigation plugin styles */
+
+ul#lnp_container {
+	padding: 0 0 15px 0;
+}
+ul#lnp_container li {
+	display: inline-block;
+	*display: inline;
+	*zoom: 1;
+	vertical-align: middle;
+}
+ul#lnp_container li.nav a {
+	display: block;
+	width: 30px;
+	height: 30px;
+	background-image: url('gallery.png') !important;
+	background-position: 9px 7px !important;
+	background-repeat: no-repeat !important;
+	background-color: #5d5d5dl;
+	opacity: 0.8;
+}
+ul#lnp_container li.next a {
+	background-position: -21px 7px !important;
+}
+ul#lnp_container li.link a {
+	padding: 0 20px 0 0;
+}
+ul#lnp_container li a:hover
+{
+	opacity: 0.6;
+}
+
+/* listing navigation plugin styles end */

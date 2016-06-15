@@ -1,0 +1,22 @@
+Plugin Updates September 2013
+
+- reCaptcha
+- banner
+- categoryFilter
+- facebookConnect
+- loanMortgageCalculator
+- export_import
+- PdfExport
+- fieldBoundBoxes
+- rating
+- FAQs
+- comment               // modified to store the user ip
+
+
+
+New added Plugins September 2013
+
+- search_by_distance    // you need a free geonames.org account!
+- ipgeo                 // installation takes 2 - 3 minutes
+- cookiesPolicy
+- testimonials

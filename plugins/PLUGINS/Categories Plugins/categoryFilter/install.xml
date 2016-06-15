@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="categoryFilter">
+	<title>Category Filter</title>
+	<description>Creates category filters</description>
+	<author>John Freeman</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>1.0.9</version>
+	<date>08.10.2012</date>
+	<controller>categoryFilter</controller>
+
+	<files>
+		<file>box.tpl</file>
+		<file>rlCategoryFilter.class.php</file>
+		<file>admin/categoryFilter.inc.php</file>
+		<file>admin/categoryFilter.tpl</file>
+		<file>static/aStyle.css</file>
+		<file>static/gallery.png</file>
+		<file>static/lib.js</file>
+		<file>static/style.css</file>
+	</files>
+
+	<install><![CDATA[
+		global $rlDb;
+
+		$rlDb -> query("
+			CREATE TABLE IF NOT EXISTS `". RL_DBPREFIX ."category_filter` (
+			`ID` int(11) NOT NULL AUTO_INCREMENT,
+			`Mode` enum('type','category') NOT NULL DEFAULT 'type',
+			`Type` varchar(80) NOT NULL,
+			`Category_IDs` mediumtext NOT NULL,
+			PRIMARY KEY (`ID`),
+			KEY `Mode` (`Mode`)
+			);
+		");
+
+		$rlDb -> query("
+			CREATE TABLE IF NOT EXISTS `". RL_DBPREFIX ."category_filter_field` (
+			`ID` int(8) NOT NULL AUTO_INCREMENT,
+			`Box_ID` int(8) NOT NULL,
+			`Field_ID` int(8) NOT NULL,
+			`Items` mediumtext CHARACTER SET utf8 NOT NULL,
+			`Item_names` mediumtext NOT NULL,
+			`Items_display_limit` varchar(3) NOT NULL,
+			`Mode` enum('auto','group','slider') NOT NULL DEFAULT 'auto',
+			`Status` enum('active','approval') NOT NULL DEFAULT 'active',
+			PRIMARY KEY (`ID`),
+			KEY `Box_ID` (`Box_ID`,`Field_ID`),
+			KEY `Field_ID` (`Field_ID`)
+			);
+		");
+
+		$rlDb -> query("
+			CREATE TABLE IF NOT EXISTS `". RL_DBPREFIX ."category_filter_relation` (
+			`ID` int(8) NOT NULL AUTO_INCREMENT,
+			`Position` int(8) NOT NULL,
+			`Category_ID` int(6) NOT NULL,
+			`Group_ID` int(1) NOT NULL,
+			`Fields` varchar(8) NOT NULL,
+			PRIMARY KEY (`ID`),
+			KEY `Category_ID` (`Category_ID`)
+			);
+		");
+	]]></install>
+
+	<hooks>
+		<hook name="apTplHeader"><![CDATA[
+			if ($_GET['controller'] == 'categoryFilter')
+			{
+				echo '<link href="'. RL_PLUGINS_URL .'categoryFilter/static/aStyle.css" type="text/css" rel="stylesheet" />';
+			}
+		]]></hook>
+		<hook version="1.0.3" name="apAjaxBuildFormPreSaving"><![CDATA[
+			global $reefless, $transfer;
+
+			if( $_GET['controller'] != 'categoryFilter' )
+				return false;
+
+			$reefless -> loadClass('CategoryFilter', null, 'categoryFilter');
+			$GLOBALS['rlCategoryFilter'] -> clearForm($transfer);
+		]]></hook>
+		<hook version="1.0.5" name="apAjaxBuildFormPostSaving"><![CDATA[
+			global $transfer, $_response;
+
+			if ( !$transfer['category_id'] || $_GET['controller'] != 'categoryFilter' )
+				return false;
+
+			$box_id = (int)$transfer['category_id'];
+
+			$GLOBALS['rlCategoryFilter'] -> saveForm($transfer);
+			$GLOBALS['rlCategoryFilter'] -> compile($box_id);
+
+			$_response -> script("$('div#form_section div.field_obj a.suspended').removeClass('suspended')");
+		]]></hook>
+		<hook name="pageinfoArea"><![CDATA[
+			global $reefless, $rlSmarty;
+
+			$reefless -> loadClass('CategoryFilter', null, 'categoryFilter');
+			$GLOBALS['rlCategoryFilter'] -> parseUrl();
+
+			$rlSmarty -> assign('cf_filter', $GLOBALS['rlCategoryFilter'] -> filters);
+		]]></hook>
+		<hook version="1.0.9" name="tplHeader"><![CDATA[
+			global $rlSmarty, $blocks;
+
+			foreach ($blocks as $block_key => $block)
+			{
+				if ( false !== strpos($block_key, 'categoryFilter_') )
+				{
+					echo '<link href="'.RL_PLUGINS_URL.'categoryFilter/static/style.css" type="text/css" rel="stylesheet" />';
+					echo '<script type="text/javascript" src="'.RL_PLUGINS_URL.'categoryFilter/static/lib.js"></script>';
+					echo '<script type="text/javascript" src="'.RL_PLUGINS_URL.'categoryFilter/static/jslider/jquery.slider.js"></script>';
+					break;
+				}
+			}
+		]]></hook>
+		<hook version="1.0.1" name="browseBCArea"><![CDATA[
+			global $reefless;
+
+			$reefless -> loadClass('CategoryFilter', null, 'categoryFilter');
+			$GLOBALS['rlCategoryFilter'] -> title();
+		]]></hook>
+		<hook name="listingsModifyWhere" version="1.0.5"><![CDATA[
+			if( $GLOBALS['rlCategoryFilter'] )
+			{
+				$GLOBALS['rlCategoryFilter'] -> where($param1, $param2);
+			}
+		]]></hook>
+		<hook version="1.0.1" name="listingsModifyJoin"><![CDATA[
+			global $reefless;
+
+			$reefless -> loadClass('CategoryFilter', null, 'categoryFilter');
+			$GLOBALS['rlCategoryFilter'] -> join();
+		]]></hook>
+		<hook version="1.0.1" name="browseTop"><![CDATA[
+			global $reefless;
+
+			$reefless -> loadClass('CategoryFilter', null, 'categoryFilter');
+			$GLOBALS['rlCategoryFilter'] -> paging();
+		]]></hook>
+		<hook version="1.0.1" name="listingsModifyField"><![CDATA[
+			global $reefless;
+
+			$reefless -> loadClass('CategoryFilter', null, 'categoryFilter');
+			$GLOBALS['rlCategoryFilter'] -> blocks();
+		]]></hook>
+		<hook version="1.0.1" name="listingDetailsTop"><![CDATA[
+			global $reefless;
+
+			$reefless -> loadClass('CategoryFilter', null, 'categoryFilter');
+			$GLOBALS['rlCategoryFilter'] -> removeBlocks();
+		]]></hook>
+		<hook version="1.0.1" name="searchMiddle"><![CDATA[
+			global $reefless;
+
+			$reefless -> loadClass('CategoryFilter', null, 'categoryFilter');
+			$GLOBALS['rlCategoryFilter'] -> removeBlocks();
+		]]></hook>
+		<hook version="1.0.2" name="boot"><![CDATA[
+			global $reefless, $rlSmarty, $rlCategoryFilter;
+
+			$reefless -> loadClass('CategoryFilter', null, 'categoryFilter');
+			$rlSmarty -> register_modifier('ctJsonDecode', array('rlCategoryFilter', 'ctJsonDecodeModifier'));
+
+			$rlCategoryFilter -> removeBlocks(true);
+		]]></hook>
+		<hook name="cronAdditional"><![CDATA[
+			global $reefless;
+
+			$reefless -> loadClass('CategoryFilter', null, 'categoryFilter');
+			$GLOBALS['rlCategoryFilter'] -> recount();
+		]]></hook>
+		<hook version="1.0.1" name="apTplControlsForm"><![CDATA[
+			global $lang;
+			$out = <<< VS
+			<tr class="body">
+				<td class="list_td">{$lang['categoryFilter_refreshes_recount']}</td>
+				<td class="list_td" align="center">
+					<input id="reorder_categoryFiler" type="button" onclick="xajax_cfRecount();$(this).val('{$lang['loading']}');" value="{$lang['recount']}" style="margin: 0;width: 100px;" />
+				</td>
+			</tr>
+			<tr>
+				<td style="height: 5px;" colspan="3"></td>
+			</tr>
+VS;
+			echo $out;
+		]]></hook>
+		<hook version="1.0.2" name="apPhpControlsBottom"><![CDATA[
+			global $reefless, $rlXajax;
+
+			$reefless -> loadClass('CategoryFilter', null, 'categoryFilter');
+			$rlXajax -> registerFunction(array('cfRecount', $GLOBALS['rlCategoryFilter'], 'ajaxCfRecount'));
+		]]></hook>
+
+		<!-- call recount method in the following hooks -->
+		<hook name="phpListingsAjaxDeleteListing"><![CDATA[
+			global $reefless;
+
+			$reefless -> loadClass('CategoryFilter', null, 'categoryFilter');
+			$GLOBALS['rlCategoryFilter'] -> recount();
+		]]></hook>
+		<hook name="afterListingDone"><![CDATA[
+			global $reefless;
+
+			$reefless -> loadClass('CategoryFilter', null, 'categoryFilter');
+			$GLOBALS['rlCategoryFilter'] -> recount();
+		]]></hook>
+		<hook name="afterListingEdit"><![CDATA[
+			global $reefless;
+
+			$reefless -> loadClass('CategoryFilter', null, 'categoryFilter');
+			$GLOBALS['rlCategoryFilter'] -> recount();
+		]]></hook>
+		<hook name="phpListingsUpgradeListing"><![CDATA[
+			global $reefless;
+			
+			$reefless -> loadClass('CategoryFilter', null, 'categoryFilter');
+			$GLOBALS['rlCategoryFilter'] -> recount();
+		]]></hook>
+		<hook name="apPhpListingsAjaxDeleteListing"><![CDATA[
+			global $reefless;
+
+			$reefless -> loadClass('CategoryFilter', null, 'categoryFilter');
+			$GLOBALS['rlCategoryFilter'] -> recount();
+		]]></hook>
+		<hook name="apPhpListingsAfterAdd"><![CDATA[
+			global $reefless;
+
+			$reefless -> loadClass('CategoryFilter', null, 'categoryFilter');
+			$GLOBALS['rlCategoryFilter'] -> recount();
+		]]></hook>
+		<hook name="apPhpListingsAfterEdit"><![CDATA[
+			global $reefless;
+
+			$reefless -> loadClass('CategoryFilter', null, 'categoryFilter');
+			$GLOBALS['rlCategoryFilter'] -> recount();
+		]]></hook>
+	</hooks>
+
+	<phrases>
+		<phrase key="categoryFilter_filter_boxes_list" module="admin"><![CDATA[List of Filter Boxes]]></phrase>
+		<phrase key="categoryFilter_filter_fields_list" module="admin"><![CDATA[List of Filter Fields]]></phrase>
+		<phrase key="categoryFilter_add_filter_box" module="admin"><![CDATA[Add a Filter Box]]></phrase>
+		<phrase key="categoryFilter_edit_filter_box" module="admin"><![CDATA[Edit Filter Box]]></phrase>
+		<phrase key="categoryFilter_build_filter_box" module="admin"><![CDATA[Build Filter Box]]></phrase>
+		<phrase key="categoryFilter_add_filter_field" module="admin"><![CDATA[Add a Filter Field]]></phrase>
+		<phrase key="categoryFilter_ext_caption" module="ext"><![CDATA[Filter Box Manager]]></phrase>
+		<phrase key="categoryFilter_filter_for" module="admin"><![CDATA[Create a filter box for]]></phrase>
+		<phrase key="categoryFilter_filter_for_type" module="admin"><![CDATA[All categories of a listing type]]></phrase>
+		<phrase key="categoryFilter_filter_mode_category" module="admin"><![CDATA[Category(s)]]></phrase>
+		<phrase key="categoryFilter_filter_for_category" module="admin"><![CDATA[Particular category(s)]]></phrase>
+		<phrase key="categoryFilter_no_category_selected" module="admin"><![CDATA[At least one category must be selected]]></phrase>
+		<phrase key="categoryFilter_filter_exists_for" module="admin"><![CDATA[Filters are already built for categories: {categories}]]></phrase>
+		<phrase key="categoryFilter_filter_exists_for_type" module="admin"><![CDATA[Filter is already built for {type} listing type]]></phrase>
+		<phrase key="categoryFilter_filter_box_added" module="admin"><![CDATA[A filter box has been added successfully ]]></phrase>
+		<phrase key="categoryFilter_filter_box_edited" module="admin"><![CDATA[The filter box has been edited successfully ]]></phrase>
+		<phrase key="categoryFilter_no_fields_added" module="common"><![CDATA[The filter does not have any fields]]></phrase>
+		<phrase key="categoryFilter_box_name" module="admin"><![CDATA[Box Name]]></phrase>
+		<phrase key="categoryFilter_filters_form" module="common"><![CDATA[Filter Form]]></phrase>
+		<phrase key="categoryFilter_related_categories" module="ext"><![CDATA[Related Listing Type/Category(s)]]></phrase>
+		<phrase key="categoryFilter_filter_box_deleted" module="admin"><![CDATA[The filter box has been removed successfully ]]></phrase>
+		<phrase key="categoryFilter_configure_filter" module="admin"><![CDATA[Configure Filter]]></phrase>
+		<phrase key="categoryFilter_show_more" module="frontEnd"><![CDATA[Show more &raquo;]]></phrase>
+		<phrase key="categoryFilter_remove_filter" module="frontEnd"><![CDATA[Clear the filter]]></phrase>
+		<phrase key="categoryFilter_filtered" module="frontEnd"><![CDATA[Filtered]]></phrase>
+		<phrase key="categoryFilter_remove_filters" module="frontEnd"><![CDATA[Clear all filters]]></phrase>
+		<phrase key="categoryFilter_apply_filter" module="frontEnd"><![CDATA[Apply filter]]></phrase>
+		<phrase key="categoryFilter_no_listings" module="frontEnd"><![CDATA[No listings found]]></phrase>
+		<phrase key="categoryFilter_title_field" module="admin"><![CDATA["{field}" filter settings]]></phrase>
+		<phrase key="categoryFilter_filter_field" module="admin"><![CDATA[Filter Field]]></phrase>
+		<phrase key="categoryFilter_view_mode" module="admin"><![CDATA[View Mode]]></phrase>
+		<phrase key="categoryFilter_mode_auto" module="admin"><![CDATA[Auto]]></phrase>
+		<phrase key="categoryFilter_mode_group" module="admin"><![CDATA[Ranges]]></phrase>
+		<phrase key="categoryFilter_mode_slider" module="admin"><![CDATA[Slider]]></phrase>
+		<phrase key="categoryFilter_visible_items_limit" module="admin"><![CDATA[Limit visible filters to]]></phrase>
+		<phrase key="categoryFilter_mode_limit_notice" module="admin"><![CDATA[The current field type is available in Auto mode only]]></phrase>
+		<phrase key="categoryFilter_filter_items" module="admin"><![CDATA[Filter options]]></phrase>
+		<phrase key="categoryFilter_changes_saved" module="admin"><![CDATA[Changes to the filter have been saved successfully ]]></phrase>
+		<phrase key="categoryFilter_items_auto" module="admin"><![CDATA[Options for this filter are generated automatically, click [here] to add custom ones]]></phrase>
+		<phrase key="categoryFilter_change_sign" module="admin"><![CDATA[Change Sign]]></phrase>
+		<phrase key="categoryFilter_min_max_stat" module="admin"><![CDATA[Current minimum value: <b>{min}</b>; maximum value: <b>{max}</b>]]></phrase>
+		<phrase key="categoryFilter_refreshes_recount" module="admin"><![CDATA[Recount category filter boxes]]></phrase>
+		<phrase key="categoryFilter_box_recounted" module="admin"><![CDATA[Category filter boxes have been recounted successfully ]]></phrase>
+	</phrases>
+	
+	<uninstall>
+		<![CDATA[
+			global $rlDb;
+
+			$sql = "DROP TABLE `".RL_DBPREFIX."category_filter`";
+			$rlDb -> query($sql);
+
+			$sql = "DROP TABLE `".RL_DBPREFIX."category_filter_field`";
+			$rlDb -> query($sql);
+
+			$sql = "DROP TABLE `".RL_DBPREFIX."category_filter_relation`";
+			$rlDb -> query($sql);
+		]]>
+	</uninstall>
+</plugin>

@@ -1,0 +1,11 @@
+div.bmb10 {margin: 5px;}
+div.banners-box {text-align: center;}
+div.banner {overflow: hidden;display: inline-block;*display: inline;*zoom: 1;}
+.banner-here {background: none repeat scroll 0 0 #E7E7E7;border: 1px solid #000000;}
+.banner-here td {color: #666666;font-weight: bold;}
+.my-banner {overflow: hidden;width: 120px;max-height: 80px;}
+.my-banner img {border: 0 !important;border-radius: 0 !important;}
+div.banners-box-between-categories {
+	height: 100px;
+	background-color: #666666;
+}

@@ -1,0 +1,65 @@
+div.inner ul.box_grid
+{
+	text-align: left;
+}
+ul.box_grid li.item
+{
+	display: inline-block; 
+	text-align: left;	
+	position: relative;
+}
+ul.box_grid li.item div.content
+{
+	padding: 0 0 15px;
+	white-space: nowrap;
+	width: 100%;
+}
+ul.box_grid li.item div.content div
+{
+	padding: 0;
+}
+ul.box_grid li.item div.content .photo
+{
+	width: 60px;
+	height: 60px;
+	overflow: hidden;
+	border: 2px solid #FFFFFF;
+	vertical-align: top;
+	position: relative;
+	float: left;
+}
+ul.box_grid li.item div.content .photo a
+{
+	vertical-align: middle;
+}
+ul.box_grid li.item div.content .photo img
+{
+	width: auto;
+	height: 100%;
+	border: 0px;
+}
+ul.box_grid li.item div.content ul
+{
+	padding: 0 5px 0 10px;
+	vertical-align: top;
+        height: 60px;
+        text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+ul.box_grid li.item div.content ul > li
+{
+	text-overflow: ellipsis;
+padding: 0px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+ul.box_grid li.item div.content ul > li:first-child
+{
+	padding-top: 0;
+}
+ul.box_grid li.item div.content .photo div.sale-rent
+{
+    bottom: -1px;
+    left: -2px;
+}

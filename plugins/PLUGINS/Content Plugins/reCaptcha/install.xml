@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="reCaptcha">
+	<title>reCaptcha</title>
+	<description>Prevents spam on your site</description>
+	<author>John Freeman</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>1.2.3</version>
+	<date>14.04.2012</date>
+	
+	<files>
+		<file>reCaptcha.tpl</file>
+		<file>recaptchalib.php</file>
+		<file>request.php</file>
+		<file>rlReCaptcha.class.php</file>
+		<file>Smarty_Compiler.class.php</file>
+	</files>
+	
+	<install><![CDATA[
+		global $reefless;
+		$reefless -> loadClass('ReCaptcha', false, 'reCaptcha', true);
+	]]></install>
+	
+	<hooks>
+		<hook version="1.1.0" name="boot"><![CDATA[
+			global $rlSmarty, $config;
+			
+			$rlSmarty -> assign('curl_loaded', (bool)extension_loaded('curl'));
+			if ( version_compare($config['rl_version'], '4.1.0') < 0 )
+			{
+				$rlSmarty -> compiler_file = RL_PLUGINS .'reCaptcha'. RL_DS .'Smarty_Compiler.class.php';
+			}
+			$_SESSION['reCaptcha_system'] = false;
+			
+			$_SESSION['ses_security_code'] = empty($_SESSION['ses_security_code']) ? mt_rand() : $_SESSION['ses_security_code'];
+			
+			if ( $_SESSION['reCaptcha_items'] )
+			{
+				foreach($_SESSION['reCaptcha_items'] as $item)
+				{
+					$_SESSION['ses_security_code_'. $item] = empty($_SESSION['ses_security_code_'. $item]) ? mt_rand() : $_SESSION['ses_security_code_'. $item];
+				}
+			}
+		]]></hook>
+		<hook name="apPhpConfigAfterUpdate"><![CDATA[
+			global $reefless;
+			$reefless -> loadClass('ReCaptcha', false, 'reCaptcha');
+		]]></hook>
+		<hook version="1.1.0" name="smartyCompileFileBottom"><![CDATA[
+			$param1;// compiled content
+			
+			if ( !$_SESSION['reCaptcha_system'] )
+			{
+				preg_match("/'captcha_id'\s*\=\>\s*'([^']*)'/", $param1, $vs_matches);
+				preg_match("/(captcha\.tpl)/", $param1, $captcha_matches);
+				if ( $captcha_matches[1] )
+				{
+					$param1 = preg_replace("/('captcha\.tpl')/", "RL_PLUGINS .'reCaptcha'. RL_DS .'reCaptcha.tpl'", $param1, 1);
+					$_SESSION['reCaptcha_system'] = true;
+					
+					if ( $vs_matches[1] )
+					{
+						$param1 .= ' <?php $_SESSION["reCaptcha_items"][] = "'. $vs_matches[1] .'"; ?> ';
+					}
+				}
+			}
+		]]></hook>
+	</hooks>
+	<configs key="reCaptcha" name="reCaptcha">
+		<![CDATA[]]>
+		<config key="reCaptcha_divider" name="Common Settings" type="divider"><![CDATA[]]></config>
+		<config key="reCaptcha_module" name="reCaptcha module" type="bool"><![CDATA[1]]></config>
+		<config key="reCaptcha_public_key" name="Public Key" type="text"><![CDATA[6LfbR9ASAAAAANSi6t0f20p64pA_FXEHyylB_Osl]]></config>
+		<config key="reCaptcha_private_key" name="Private Key" type="text"><![CDATA[6LfbR9ASAAAAAFp-mwvAzvNLvL00pNeAKJaco47U]]></config>
+		<config key="reCaptcha_theme" name="Theme" type="select" values="red,white,blackglass,clean"><![CDATA[red]]></config>
+	</configs>
+</plugin>

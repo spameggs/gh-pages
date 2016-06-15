@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="invoices">
+	<title>Invoices</title>
+	<description>Invoices</description>
+	<author>Vladimir</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>1.0.0</version>
+	<date>16.06.2012</date>                      
+	<controller>invoices</controller>
+
+	<files>
+		<file>admin/invoices.inc.php</file>
+		<file>admin/invoices.tpl</file>
+		<file>admin/invoice_details.tpl</file>
+		<file>tplFooter.php</file>
+		<file>invoices.inc.php</file>
+		<file>invoices.tpl</file>
+		<file>rlInvoices.class.php</file>
+		<file>tplFooter.tpl</file>
+	</files>
+
+	<install>
+		<![CDATA[
+			global $rlDb;
+
+			$sql = "CREATE TABLE `".RL_DBPREFIX."invoices` (
+				`ID` int(11) NOT NULL AUTO_INCREMENT,
+				`Account_ID` int(11) NOT NULL default '0',
+				`Total` double NOT NULL default '0',
+				`Txn_ID` varchar(30) NOT NULL default '', 
+				`Subject` varchar(255) CHARACTER SET utf8 NOT NULL default '', 
+				`Description` mediumtext CHARACTER SET utf8 NOT NULL, 
+				`Date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+				`Pay_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+				`IP` varchar(100) NOT NULL default '',
+			  	`pStatus` enum('paid','unpaid') NOT NULL DEFAULT 'unpaid',
+			  PRIMARY KEY (`ID`)
+			) DEFAULT CHARSET=utf8";
+
+			$rlDb -> query( $sql );
+        ]]>
+	</install>
+
+	<hooks>        
+		<hook name="tplFooter">
+			<![CDATA[
+				require_once(RL_PLUGINS .'invoices'. RL_DS .'tplFooter.php');
+			]]>
+		</hook>      
+		<hook name="tplHeader">
+			<![CDATA[ 
+				echo '<link href="'. RL_PLUGINS_URL .'invoices/static/style.css" type="text/css" rel="stylesheet" />';
+			]]>
+		</hook>     
+		<hook name="apTplHeader">
+			<![CDATA[ 
+				echo '<link href="'. RL_PLUGINS_URL .'invoices/static/aStyle.css" type="text/css" rel="stylesheet" />';
+			]]>
+		</hook>
+	</hooks>
+
+	<emails>
+		<email key="create_invoice" subject="{site_name} Invoice: {subject}"><![CDATA[Dear {username},
+
+You received an invoice in your account. 
+
+<b>Dåtails:</b>
+Invoice ID: {invoice_id},
+Subject: {subject},
+Amount: <b>{amount}</b>,
+Date: {date},
+Description:
+{description}
+
+
+Use following link to pay invoice {link}
+______________________________
+Thank you,
+{site_name} Administration
+		]]></email>
+	</emails>
+
+	<pages>
+		<page key="invoices" name="My Invoices" type="system" path="invoices" get="" login="1" controller="invoices" menus="2" tpl="1"><![CDATA[]]></page>
+	</pages>
+
+	<phrases>
+		<phrase key="invoices" module="common"><![CDATA[Invoices]]></phrase>
+		<phrase key="invoices_payment_completed" module="common"><![CDATA[Your payment has successfully gone through.]]></phrase>
+		<phrase key="invoices_payment_canceled" module="common"><![CDATA[Your payment has been canceled, please contact the site administrator for getting details.]]></phrase>
+		<phrase key="invoice_txn_id" module="common"><![CDATA[Invoice ID]]></phrase>
+		<phrase key="invoice_total" module="common"><![CDATA[Amount]]></phrase>
+		<phrase key="invoice_subject" module="common"><![CDATA[Subject]]></phrase>
+		<phrase key="invoice_description" module="common"><![CDATA[Invoice Details]]></phrase>
+		<phrase key="invoice_info" module="common"><![CDATA[Invoice Info]]></phrase>
+		<phrase key="no_account_invoices" module="common"><![CDATA[No invoices]]></phrase>
+		<phrase key="invoice_pay" module="common"><![CDATA[Checkout]]></phrase>
+		<phrase key="invoice_details" module="frontEnd"><![CDATA[Details]]></phrase>
+		<phrase key="invoice_paid_with" module="frontEnd"><![CDATA[Paid with]]></phrase>
+		<phrase key="invoice_paid_date" module="frontEnd"><![CDATA[Date of payment]]></phrase>
+		<phrase key="invoice_payment_info" module="frontEnd"><![CDATA[Payment details]]></phrase>
+		<phrase key="unpaid_invoices_message" module="common"><![CDATA[You have unpaid invoices. Please click [here] to pay invoice.]]></phrase>
+		<phrase key="paid" module="common"><![CDATA[Paid]]></phrase>
+		<phrase key="unpaid" module="common"><![CDATA[Unpaid]]></phrase>
+
+		<phrase key="invoices_add_item" module="admin"><![CDATA[Create Invoice]]></phrase>
+		<phrase key="invoices_edit_item" module="admin"><![CDATA[Edit Item]]></phrase>
+		<phrase key="invoices_item_added" module="admin"><![CDATA[The Item has been successfully added]]></phrase>
+		<phrase key="invoices_item_edited" module="admin"><![CDATA[The Item has been successfully edited]]></phrase>
+		<phrase key="invoice_details" module="admin"><![CDATA[Invoice Details]]></phrase>
+		<phrase key="invoice_view_details" module="admin"><![CDATA[View Invoice Details]]></phrase>
+
+		<phrase key="ext_invoices_manager" module="ext"><![CDATA[Invoices Manager]]></phrase>
+		<phrase key="ext_subject" module="ext"><![CDATA[Subject]]></phrase>
+		<phrase key="ext_paid" module="ext"><![CDATA[Paid]]></phrase>
+		<phrase key="ext_unpaid" module="ext"><![CDATA[Unpaid]]></phrase>
+	</phrases>
+
+	<configs key="invoices" name="Invoices">
+   		<![CDATA[]]>
+		<config key="invoices_txn_tpl" name="Txn template" type="text" group="6"><![CDATA[INV*******]]></config>
+	</configs>
+
+	<uninstall>
+		<![CDATA[
+			global $rlDb;
+
+			$sql = "DROP TABLE `".RL_DBPREFIX."invoices`";
+			$rlDb -> query($sql);
+        ]]>
+	</uninstall>
+</plugin>

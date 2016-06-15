@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="dataEntriesImport">
+	<title>Data Entries Import</title>
+	<description>Import Data Entries through TXT,CSV,XLS files</description>
+	<author>Alex</author>
+	<owner>Flynax classifieds software</owner>
+	<version>1.1.1</version>
+	<date>05.03.2012</date>
+	<controller>dataEntriesImport</controller>
+
+	<files>
+		<file>rlDataEntriesImport.class.php</file>
+		<file>admin/dataEntriesImport.inc.php</file>
+		<file>admin/dataEntriesImport.tpl</file>
+		<file>lib/oleread.inc</file>
+		<file>lib/parsecsv.lib.php</file>
+		<file>lib/reader.php</file>
+	</files>
+
+	<phrases>
+		<phrase key="dataEntriesImport_upload" module="admin"><![CDATA[Upload]]></phrase>
+		<phrase key="dataEntriesImport_import" module="admin"><![CDATA[Import]]></phrase>
+		<phrase key="dataEntriesImport_import_to" module="admin"><![CDATA[Import To]]></phrase>
+		<phrase key="dataEntriesImport_import_to_new" module="admin"><![CDATA[New]]></phrase>
+		<phrase key="dataEntriesImport_import_to_exists" module="admin"><![CDATA[Exists]]></phrase>
+		<phrase key="dataEntriesImport_data_entry" module="admin"><![CDATA[Data Entry]]></phrase>
+		<phrase key="dataEntriesImport_source" module="admin"><![CDATA[Source]]></phrase>
+		<phrase key="dataEntriesImport_delimiter" module="admin"><![CDATA[Delimiter]]></phrase>
+		<phrase key="dataEntriesImport_delimiter_new_line" module="admin"><![CDATA[New line]]></phrase>
+		<phrase key="dataEntriesImport_delimiter_comma" module="admin"><![CDATA[Comma]]></phrase>
+		<phrase key="dataEntriesImport_delimiter_tab" module="admin"><![CDATA[Tab]]></phrase>
+		<phrase key="dataEntriesImport_delimiter_another" module="admin"><![CDATA[Another]]></phrase>
+		<phrase key="dataEntriesImport_extensions_desc" module="admin"><![CDATA[Compatible extensions: <b>txt</b>, <b>csv</b>, <b>xls</b>]]></phrase>
+		<phrase key="dataEntriesImport_notice" module="admin"><![CDATA[<b>[count]</b> new Data Entries imported]]></phrase>
+		<phrase key="dataEntriesImport_error_upload" module="admin"><![CDATA[Failed to copy the file for parsing]]></phrase>
+		<phrase version="1.1.0" key="dataEntriesImport_df_parent" module="admin"><![CDATA[Parent Entry]]></phrase>
+	</phrases>
+
+	<updates>
+		<update version="1.0.1" files="rlDataEntriesImport.class.php"><![CDATA[]]></update>
+		<update version="1.1.0" files="rlDataEntriesImport.class.php,admin/dataEntriesImport.tpl,admin/dataEntriesImport.inc.php"><![CDATA[]]></update>
+		<update version="1.1.1" files="admin/dataEntriesImport.inc.php,admin/dataEntriesImport.inc.php"><![CDATA[]]></update>
+	</updates>
+
+</plugin>

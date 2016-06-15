@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="testimonials">
+	<title>Testimonials</title>
+	<description>Adds testimonial functions on the website</description>
+	<author>John Freeman</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>1.0.1</version>
+	<date>16.08.2013</date>
+	<controller>testimonials</controller>
+	
+	<files>
+		<file>box.tpl</file>
+		<file>item.tpl</file>
+		<file>dom.tpl</file>
+		<file>page.inc.php</file>
+		<file>page.tpl</file>
+		<file>static/style.css</file>
+		<file>static/gallery.png</file>
+		<file>admin/testimonials.inc.php</file>
+		<file>admin/testimonials.tpl</file>
+	</files>
+	
+	<install><![CDATA[
+		global $rlDb;
+		
+		$rlDb -> query("
+			CREATE TABLE `".RL_DBPREFIX."testimonials` (
+			`ID` INT(5) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+			`Author` VARCHAR(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+			`Account_ID` int(7) NOT NULL,
+			`Testimonial` MEDIUMTEXT CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+			`Date` datetime NOT NULL,
+			`Email` varchar(100) NOT NULL,
+			`IP` varchar(30) NOT NULL,
+			`Status` ENUM('active', 'approval', 'pending') NOT NULL DEFAULT 'pending',
+			INDEX (`Status`)
+			);
+		");
+	]]></install>
+	
+	<hooks>
+		<hook name="apPhpHome"><![CDATA[
+			global $reefless;
+
+			$reefless -> loadClass('Testimonials', null, 'testimonials');
+			$GLOBALS['rlTestimonials'] -> apStatistics();
+		]]></hook>
+		<hook name="tplHeader"><![CDATA[
+			global $rlSmarty, $blocks, $page_info;
+			
+			if ( $blocks['testimonials'] || $page_info['Key'] == 'testimonials' ) {
+				echo '<link href="'.RL_PLUGINS_URL.'testimonials/static/style.css" type="text/css" rel="stylesheet" />';
+			}
+		]]></hook>
+		
+		<hook name="specialBlock"><![CDATA[
+			global $blocks, $reefless;
+			
+			if ( $blocks['testimonials'] ) {
+				$reefless -> loadClass('Testimonials', null, 'testimonials');
+				$GLOBALS['rlTestimonials'] -> getOne();
+			}
+		]]>	</hook>
+	</hooks>
+	
+	<phrases>
+		<phrase key="testimonials_testimonial" module="common"><![CDATA[Testimonial]]></phrase>
+		<phrase key="testimonials_testimonials" module="common"><![CDATA[Testimonials]]></phrase>
+		<phrase key="testimonials_add_testimonial" module="frontEnd"><![CDATA[Add Your Testimonial]]></phrase>
+		<phrase key="testimonials_no_testimonials" module="frontEnd"><![CDATA[There are not testimonials yet.]]></phrase>
+		<phrase key="testimonials_read_more" module="frontEnd"><![CDATA[Read More]]></phrase>
+		<phrase key="testimonials_read_more_title" module="frontEnd"><![CDATA[Read other testimonials]]></phrase>
+		<phrase key="testimonials_add" module="frontEnd"><![CDATA[Add Testimonial]]></phrase>
+		<phrase key="testimonial_not_valid_content" module="frontEnd"><![CDATA[Your testimonial is too short or empty]]></phrase>
+		<phrase key="testimonials_accepted_to_moderation" module="frontEnd"><![CDATA[Thank you! Your testimonial saved and will be published very soon.]]></phrase>
+		<phrase key="testimonials_posted" module="frontEnd"><![CDATA[Thank you! Your testimonial has been posted on the page.]]></phrase>
+		<phrase key="testimonials_manager" module="ext"><![CDATA[Testimonials Manager]]></phrase>
+		<phrase key="testimonials_ext_delete_notice" module="ext"><![CDATA[Are you sure you want to remove this testimonial? There is no undo!]]></phrase>
+	</phrases>
+	
+	<pages>
+		<page key="testimonials" name="Testimonials" type="system" path="testimonials" controller="page" tpl="1" menus="3"><![CDATA[]]></page>
+	</pages>
+	
+	<blocks>
+		<block key="testimonials" name="Testimonials" side="left" type="smarty" tpl="0"><![CDATA[
+			{include file=$smarty.const.RL_PLUGINS|cat:'testimonials'|cat:$smarty.const.RL_DS|cat:'box.tpl'}
+		]]></block>
+	</blocks>
+	
+	<configs key="testimonials" name="Testimonials">
+		<![CDATA[]]>
+		<config key="testimonials_moderate" name="Moderate testimonials" type="bool"><![CDATA[1]]></config>
+	</configs>
+	
+	<uninstall>
+		<![CDATA[
+			global $rlDb;
+			
+			$sql = "DROP TABLE `".RL_DBPREFIX."testimonials`";
+			$rlDb -> query($sql);
+		]]>
+	</uninstall>
+</plugin>

@@ -1,0 +1,29 @@
+.poll_item
+{
+	display: inline-block;
+	height: 15px;
+	width: 2px;
+	vertical-align: middle;
+	margin: -2px 2px 0 2px;
+	margin: -2px 0 0 0\9;
+}
+.poll_vote_content
+{
+	_height: 20px;
+	min-height: 20px;
+}
+
+ul.poll_results_list li
+{
+	padding: 0 0 6px;
+}
+ul.poll_results_list li div.poll_caption
+{
+	padding: 0 0 2px;
+	font-size: 12px;
+}
+
+ul.poll_list li
+{
+	padding: 0 0 3px;
+}

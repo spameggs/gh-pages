@@ -1,0 +1,136 @@
+/* legend */
+#df_field_from div
+{
+    cursor:default;
+}
+#booking_legend div.image
+{
+	border: 1px #888 solid;
+	cursor: default;
+}
+
+/* navbar */
+div#booking_nav
+{
+	background: #f4f4f4;
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;
+	padding: 5px 10px 7px;
+	margin: 5px 0;
+}
+
+/* calendar */
+.monthName
+{
+    text-align: center;
+    font-weight: bold;
+    font-size: 12px;
+    color: #585858;
+    font-family: trebuchet MS;
+}
+.dayName
+{
+	background: url('./img/m_title.gif');
+	height: 18px;
+	margin-bottom: 2px;
+}
+.dayName td
+{
+    font-size: 10px;
+    font-family: Tahoma;
+    color: #222;
+    text-align: center;
+}
+.daySelect,
+.today,
+.bprcheckin,
+.bprcheckout,
+.prcheckin,
+.prcheckout,
+.prbooked,
+.checkin,
+.checkout,
+.booked,
+.available,
+.restriction,
+.unavailable,
+.closein,
+.closeout,
+.bclosein,
+.bcloseout,
+.pclosein,
+.pcloseout,
+.closed
+{
+    border:1px solid #e0e0e0;
+    width: 20px;
+    text-align: center;
+    cursor: pointer;
+}
+.today
+{
+    background-color: #fef6a0;
+}
+.today:hover
+{
+    border: 1px solid #444;
+}
+.restriction
+{
+    background-color: #f6f6f6;
+    cursor: default;
+	opacity:0.4;
+}
+.unavailable
+{
+    background-color: #f6f6f6;
+    cursor: default;
+}
+.available:hover
+{
+    border:1px solid #555;
+}
+.daySize
+{
+    font-size:15px;
+}
+#calendar_load
+{
+	position: absolute;
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;
+	background: url('./img/pg_load.gif') center center no-repeat #7F7F7F;
+}
+
+.brr
+{
+    width: 120px!important;
+}
+
+/* Slider */
+ul { margin: 0; padding: 0; list-style-type: none; }
+
+.steps { overflow: hidden; margin:0 auto;}
+.steps li { float: left; margin:5px; }
+
+.steps-nav{ height:25px;float: right; }
+.steps-nav li { float: left; margin:0 0 0 10px; }
+.steps-nav li a { display: block; width:14px; height:20px; background: url('img/nav_trans.png') no-repeat 0px -1px; text-indent: -1000px; overflow:hidden; }
+
+.js .steps-nav li.on,
+.js .steps-nav li.on a { background: url('img/nav_trans.png') no-repeat -32px -1px; color:#5a5a48; }
+
+/* ufvalidator */
+.ufvalid .error-input,
+.ufvalid .error-both .input,
+.ufvalid .error-same .input
+{
+	background-color: #FFEFEF;
+	border-color: #BB6666;
+	color:#660000;
+}
+.ufvalid .error-same, .ufvalid .error-both { color:#fff; background-color:#b66; -moz-border-radius:3px; }
+
+.calendar_td div {
+	margin: 1px;
+}

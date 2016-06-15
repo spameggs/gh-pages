@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="cookiesPolicy">
+	<title>Cookies Policy</title>
+	<description>Allow or deny save cookies in browser</description>
+	<author>Viktor S.</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>1.0.2</version>
+	<date>08.21.2013</date>
+	
+	<files>
+		<file>tab.tpl</file>
+		<file>static/gallery.png</file>
+		<file>static/lib.js</file>
+		<file>static/style.css</file>
+	</files>
+	
+	<hooks>
+		<hook name="tplHeader"><![CDATA[
+			global $config;
+			if ( !defined('RL_MOBILE') && is_numeric(array_search( $_SESSION['GEOLocationData'] -> Country_code, explode(',', $config['cookiesPolicy_country'] ))) )
+			{
+				echo '<link href="'. RL_PLUGINS_URL .'cookiesPolicy/static/style.css" type="text/css" rel="stylesheet" />';
+			}
+		]]></hook>
+		<hook version="1.0.1" name="tplFooter"><![CDATA[
+			global $config, $rlSmarty;
+			if ( is_numeric(array_search( $_SESSION['GEOLocationData'] -> Country_code, explode(',', $config['cookiesPolicy_country'] ))) && !defined('RL_MOBILE') )
+			{
+				$rlSmarty -> display(RL_ROOT . 'plugins' . RL_DS . 'cookiesPolicy' . RL_DS . 'tab.tpl');
+			}
+		]]></hoot>
+	</hooks>
+	
+	<configs key="cookiesPolicy" name="Cookies Policy">
+		<![CDATA[]]>
+		<config key="cookiesPolicy_country" name="Coutry codes for show cookies Policy" description="See country codes here: http://www.iso.org/iso/country_codes/iso_3166_code_lists/country_names_and_code_elements.htm" type="text"><![CDATA[AT,BE,BG,CY,CZ,DE,DK,EE,FI,FR,GB,GR,HU,IE,IT,LV,LT,LU,MT,NL,PL,PT,RO,SK,SI,ES,SE]]></config>
+		<config key="cookiesPolicy_position" name="Position" values="Bottom Left, Bottom Right" type="select"><![CDATA[Bottom Left]]></config>
+		<config key="cookiesPolicy_redirect_url" name="Redirect Url for deny" type="text"><![CDATA[http://www.google.com]]></config>
+	</configs>
+	
+	<phrases>
+		<phrase key="cookies_policy_cookie_control" module="common"><![CDATA[Cookie Policy]]></phrase>
+		<phrase key="cookies_policy_content_text" module="common"><![CDATA[Cookies are files stored in your browser with the aim of personalizing your web experience. By accepting our cookie policy you are agreeing to our use of cookies.]]></phrase>
+		<phrase key="cookies_policy_accept" module="common"><![CDATA[Accept]]></phrase>
+		<phrase key="cookies_policy_decline" module="common"><![CDATA[Decline]]></phrase>
+	</phrases>
+</plugin>

@@ -1,0 +1,326 @@
+/* comapre listings styles */
+div#compare_listings_fixed
+{
+	position: fixed;
+	z-index: 100001;
+	right: 0;
+	top: 50%;
+	margin-top: -230px;
+}
+@media \0screen {
+	div#compare_listings_fixed {
+		padding: 30px 0 0 0;
+	}
+}
+div#compare_listings_tab
+{
+	display: inline-block;
+	*display: inline;
+	*zoom: 1;
+	
+	height: 25px;
+	white-space: nowrap;
+	padding: 5px 30px 0 10px;
+	padding: 8px 30px 0 10px\9;
+	cursor: pointer;
+	
+	border-radius: 6px 6px 0 0;
+	border-style: solid;
+	border-width: 1px;
+	border-bottom: 0;
+	box-shadow: none;
+	/*box-shadow: -3px 0 0 rgba(0,0,0,0.2);*/
+	
+	background-image: url('gallery.png');
+	background-position: right 9px;
+	background-repeat: no-repeat;
+	
+	-moz-user-select: none;
+	-webkit-user-select: none;
+	
+	-moz-transform:rotate(270deg); 
+	-moz-transform-origin: bottom right;
+	-webkit-transform: rotate(270deg);
+	-webkit-transform-origin: bottom right;
+	-o-transform: rotate(270deg);
+	-o-transform-origin: bottom right;
+	-ms-transform: rotate(270deg); 
+	-ms-transform-origin: bottom right;
+}
+@media \0screen {
+	div#compare_listings_tab {
+		margin: 0 -148px 0 0;
+		width: 140px;
+		filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);
+	}
+}
+div#compare_listings_tab label
+{
+	font-size: 13px;
+	cursor: pointer;
+}
+div#compare_listings_tab span.counter
+{
+	-moz-transform:rotate(90deg);
+	-webkit-transform: rotate(90deg);
+	-o-transform: rotate(90deg);
+	
+	display: inline-block;
+	*display: inline;
+	*zoom: 1;
+}
+div#compare_listings_area
+{
+	width: 270px;
+	position: absolute;
+	right: -272px;
+	*top: 1px\9;
+	padding: 0;
+	border-radius: 0;
+	border-style: solid;
+	border-width: 1px;
+	box-shadow: none;
+	background: #f1f1f1;
+}
+@media \0screen {
+	div#compare_listings_area {
+		margin: -35px 0 0 0;
+	}
+}
+div#compare_listings_area > div
+{
+	padding: 5px 5px 10px 15px;
+}
+div#compare_listings_area div.title
+{
+	padding: 3px 0 0 0;
+}
+div#compare_listings_area div.body
+{
+	padding: 8px 0 0 0;
+	min-height: 150px;
+	max-height: 351px;
+	overflow-y: auto;
+	width: 250px;
+	overflow-x: hidden;
+}
+div#compare_listings_area div.body div.item
+{
+	padding: 0 0 10px 0;
+	margin: 0 5px 0 0;
+	white-space: nowrap;
+	position: relative;
+}
+div#compare_listings_area div.body div.item div.left
+{
+	display: inline-block;
+	*display: inline;
+	*zoom: 1;
+	width: 70px;
+	vertical-align: top;
+}
+div#compare_listings_area div.body div.item div.left a
+{
+	text-decoration: none;
+}
+div#compare_listings_area div.body div.item div.right
+{
+	display: inline-block;
+	*display: inline;
+	*zoom: 1;
+	width: 140px;
+	overflow: hidden;
+	vertical-align: top;
+	text-overflow: ellipsis;
+}
+div#compare_listings_area div.body div.item img
+{
+	width: 62px;
+	border-radius: 3px;
+	border: 1px white solid;
+}
+div#compare_listings_area div.body div.item div.category
+{
+    padding: 12px 0 0 0;
+}
+div#compare_listings_area div.body div.item div.category a
+{
+	background: url('gallery.png') 0 -81px no-repeat;
+    color: #7c7c7c;
+    font-size: 12px;
+    padding: 0 0 0 10px;
+}
+div#compare_listings_area div.body div.item div.remove,
+table.compare div.remove
+{
+	background: url('gallery.png') 0 -103px no-repeat;
+	width: 10px;
+	height: 10px;
+	cursor: pointer;
+	position: absolute;
+	right: 0;
+	top: 0;
+}
+table.compare div.remove
+{
+	right: -15px;
+	top: -10px;
+}
+div#compare_listings_area div.button
+{
+	padding: 10px 0 10px 75px;
+}
+
+div#listings .nav a.add_to_compare span,
+div#content_nav_icons a.add_to_compare span
+{
+	background: url('gallery.png') 0 -23px no-repeat;
+	padding: 0 8px!important;
+}
+div#listings .nav a.remove_from_compare span,
+div#content_nav_icons a.remove_from_compare span
+{
+	background: url('gallery.png') 0 -52px no-repeat;
+	padding: 0 8px!important;
+}
+table.compare
+{
+	table-layout: fixed;
+	width: 100%;
+}
+table.compare td.fields-column
+{
+	width: 115px;
+}
+table.compare div.scroll
+{
+	overflow-x: auto;
+	min-height: 100px;
+	margin: 0 0 0 5px;
+}
+table.compare td.divider
+{
+	height: 2px;
+}
+table.compare td.fields-column td.item
+{
+	border-color: #a3998d;
+	border-style: solid;
+	border-right-width: 2px;
+	padding: 10px;
+	border-bottom: 0;
+}
+table.compare td.fields-column td.name
+{
+	width: auto;
+	word-wrap: break-word;
+}
+table.compare td.fields-column td.hover
+{
+	background: #a4998a;
+	color: white;
+}
+
+table.compare td.fields-content td.item
+{
+	border-right: 1px #a3998d solid;
+	padding: 10px;
+	border-bottom: 0;
+	width: 170px;
+	word-wrap: break-word;
+	vertical-align: top;
+}
+table.compare td.fields-content td.hover
+{
+	background: #c5bcaf;
+}
+table.compare td.fields-content td.same
+{
+	color: #517d2a;
+}
+table.compare td.fields-content tr td.item:last-child
+{
+	border-right: 0;
+}
+
+/* fix */
+table.compare td.side_bar div.preview
+{
+	display: inline-block;
+	*display: inline;
+	*zoom: 1;
+	position: relative;
+}
+table.compare td.side_bar div.preview img
+{
+	width: auto;
+	height: auto;
+	margin-top: -10px;
+}
+
+ul li.compare-icon span img
+{
+	width: 18px;
+	height: 18px;
+	background: url('gallery.png') 0 -24px no-repeat;
+}
+ul li.compare-icon span.remove img
+{
+	background: url('gallery.png') 0 -53px no-repeat;
+}
+
+a.compare_fullscreen,
+a.compare_default
+{
+	padding: 3px 5px 2px;
+}
+a.compare_fullscreen span,
+a.compare_default span
+{
+	padding: 0 20px 2px 5px!important;
+	background: url('gallery.png') right -161px no-repeat;
+	background-position: right -163px\9;
+}
+a.compare_default span
+{
+	background-position: right -189px;
+	background-position: right -191px\9;
+}
+
+div.compare_fullscreen_area
+{
+	padding: 25px 20px;
+}
+div.compare_footer
+{
+	padding: 15px 0 0 0!important;
+	margin: 0!important;
+	width: auto!important;
+	background: none!important;
+	border: 0!important;
+}
+div.compare_footer img
+{
+	opacity: 0.8;
+	filter: alpha(opacity=80);
+	-webkit-filter: grayscale();
+	max-height: 40px;
+	max-width: 150px;
+}
+div.compare_results_block
+{
+	padding: 0 0 15px 0!important;
+}
+div.compare_results_block a.save_search
+{
+	margin: 0!important;
+}
+ul.comapre_saved_list li:not(:last-child)
+{
+	padding: 0 0 5px 0;
+}
+ul.comapre_saved_list a.active
+{
+	font-weight: bold;
+}
+/* comapre listings styles end */

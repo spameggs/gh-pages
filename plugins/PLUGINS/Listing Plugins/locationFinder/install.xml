@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="locationFinder">
+	<title>Location Finder</title>
+	<description>Helps users to define the exact location and address syntax using Google Maps</description>
+	<author>John Freeman</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>2.0.2</version>
+	<date>06.03.2012</date>
+	<controller>locationFinder</controller>
+	
+	<files>
+        <file>map.tpl</file>
+        <file>details.tpl</file>
+        <file>rlLocationFinder.class.php</file>
+        <file>admin/locationFinder.inc.php</file>
+        <file>admin/locationFinder.tpl</file>
+	</files>
+
+	<install><![CDATA[
+		global $rlDb;
+        
+        $sql = "ALTER TABLE `".RL_DBPREFIX."listings` ADD `lf_zoom` INT(2) NOT NULL;";
+        $rlDb -> query($sql);
+        
+        $sql = "ALTER TABLE `".RL_DBPREFIX."listings` ADD `lf_use` ENUM( '0', '1' ) DEFAULT '0' NOT NULL;";
+        $rlDb -> query($sql);
+        
+        /* create hidded configs */
+        $sql = "INSERT INTO `".RL_DBPREFIX."config` (`Group_ID`, `Key`, `Default`, `Type`, `Plugin`) VALUES (0, 'locationFinder_position', 'top', 'text', 'locationFinder'), (0, 'locationFinder_type', '', 'text', 'locationFinder')";
+        $rlDb -> query($sql);
+        ]]>
+	</install>
+	
+	<hooks>
+        <hook name="addListingPreFields">
+            <![CDATA[
+                $GLOBALS['rlSmarty'] -> display(RL_ROOT . 'plugins' . RL_DS . 'locationFinder' . RL_DS . 'map.tpl');
+            ]]>
+        </hook>
+        <hook name="editListingPreFields">
+            <![CDATA[
+                $GLOBALS['rlSmarty'] -> display(RL_ROOT . 'plugins' . RL_DS . 'locationFinder' . RL_DS . 'map.tpl');
+            ]]>
+        </hook>
+        <hook name="afterListingEdit">
+			<![CDATA[
+				global $reefless, $listing_id, $lf_listing_id;
+				
+				$lf_listing_id = $listing_id;
+				$reefless -> loadClass('LocationFinder', false, 'locationFinder');
+				$GLOBALS['rlLocationFinder'] -> assignLocation();
+			]]>
+        </hook>
+        <hook name="afterListingCreate">
+			<![CDATA[
+				global $reefless, $listing_id, $lf_listing_id;
+				
+				$lf_listing_id = $listing_id;
+				$reefless -> loadClass('LocationFinder', false, 'locationFinder');
+				$GLOBALS['rlLocationFinder'] -> assignLocation();
+			]]>
+        </hook>
+        <hook name="addListingPostSimulation">
+			<![CDATA[
+				global $reefless, $listing;
+				$_POST['f']['lf']['lat'] = $listing['Loc_latitude'];
+				$_POST['f']['lf']['lng'] = $listing['Loc_longitude'];
+				$_POST['f']['lf']['zoom'] = $listing['lf_zoom'];
+				$_POST['f']['lf']['use'] = $listing['lf_use'];
+			]]>
+        </hook>
+        <hook name="editListingPostSimulation">
+			<![CDATA[
+				global $reefless, $listing;
+				$_POST['f']['lf']['lat'] = $listing['Loc_latitude'];
+				$_POST['f']['lf']['lng'] = $listing['Loc_longitude'];
+				$_POST['f']['lf']['zoom'] = $listing['lf_zoom'];
+				$_POST['f']['lf']['use'] = $listing['lf_use'];
+			]]>
+        </hook>
+        <hook version="2.0.1" name="listingDetailsBottom">
+			<![CDATA[
+				global $config, $listing_data;
+				
+				if ( $listing_data['lf_zoom'] )
+				{
+					$config['map_default_zoom'] = $listing_data['lf_zoom'];
+				}
+			]]>
+        </hook>
+        <hook version="2.0.1" name="apPhpListingsView">
+			<![CDATA[
+				global $config, $listing_data;
+				
+				if ( $listing_data['lf_zoom'] )
+				{
+					$config['map_default_zoom'] = $listing_data['lf_zoom'];
+				}
+			]]>
+        </hook>
+        <hook name="apTplListingsFormEdit">
+			<![CDATA[
+				 $GLOBALS['rlSmarty'] -> display(RL_ROOT . 'plugins' . RL_DS . 'locationFinder' . RL_DS . 'admin' . RL_DS . 'map.tpl');
+			]]>
+        </hook>
+        <hook name="apTplListingsFormAdd">
+			<![CDATA[
+				 $GLOBALS['rlSmarty'] -> display(RL_ROOT . 'plugins' . RL_DS . 'locationFinder' . RL_DS . 'admin' . RL_DS . 'map.tpl');
+			]]>
+        </hook>
+        <hook name="apPhpListingsPost">
+			<![CDATA[
+				global $reefless, $listing;
+				$_POST['f']['lf']['lat'] = $listing['Loc_latitude'];
+				$_POST['f']['lf']['lng'] = $listing['Loc_longitude'];
+				$_POST['f']['lf']['zoom'] = $listing['lf_zoom'];
+				$_POST['f']['lf']['use'] = $listing['lf_use'];
+			]]>
+        </hook>
+        <hook name="apPhpListingsAfterEdit">
+			<![CDATA[
+				global $reefless, $listing_id, $lf_listing_id;
+				
+				$lf_listing_id = $listing_id;
+				$reefless -> loadClass('LocationFinder', false, 'locationFinder');
+				$GLOBALS['rlLocationFinder'] -> assignLocation();
+			]]>
+        </hook>
+        <hook name="apPhpListingsAfterAdd">
+			<![CDATA[
+				global $reefless, $listing_id, $lf_listing_id;
+				
+				$lf_listing_id = $listing_id;
+				$reefless -> loadClass('LocationFinder', false, 'locationFinder');
+				$GLOBALS['rlLocationFinder'] -> assignLocation();
+			]]>
+        </hook>
+	</hooks>
+	
+	<configs key="locationFinder" name="Location Finder">
+		<![CDATA[]]>
+		<config version="2.0.2" key="locationFinder_search_divider" name="Search settings" type="divider"><![CDATA[]]></config>
+		<config version="2.0.2" key="locationFinder_search" name="Default location" type="text"><![CDATA[Miami beach, FL]]></config>
+		<config version="2.0.2" key="locationFinder_use_location" name="Use visitor location" type="bool" description="Disable this option to use default location"><![CDATA[1]]></config>
+		<config version="2.0.2" key="locationFinder_map_divider" name="Map settings" type="divider"><![CDATA[]]></config>
+		<config key="locationFinder_map_zoom" name="Default map zoom" description="From 0 (World) to 19 (street)" type="text" validate="int"><![CDATA[13]]></config>
+		<config key="locationFinder_map_width" name="Map width (in pixels)" description="leave empty or set 0 to use 100%" type="text" validate="int"><![CDATA[0]]></config>
+		<config key="locationFinder_map_height" name="Map height (in pixels)" type="text" validate="int"><![CDATA[250]]></config>
+	</configs>
+	
+	<phrases>
+        <phrase key="locationFinder_fieldset_caption" module="common"><![CDATA[Location on map]]></phrase>
+        <phrase key="locationFinder_location" module="common"><![CDATA[Location]]></phrase>
+        <phrase version="2.0.2" key="locationFinder_drag_notice" module="common"><![CDATA[Drag the marker to the necessary location]]></phrase>
+        <phrase key="locationFinder_use_location" module="common"><![CDATA[Use map location]]></phrase>
+        <phrase key="locationFinder_hint" module="common"><![CDATA[If you want to show more accurate coordinates on the map you can enter Country, State/Region, City and Address separated by commas, do a search and then drag the marker to the correct location on the map afterwards.]]></phrase>
+        <phrase key="locationFinder_settings" module="admin"><![CDATA[Map position settings]]></phrase>
+        <phrase key="locationFinder_position" module="admin"><![CDATA[Map position]]></phrase>
+        <phrase key="locationFinder_form_top" module="admin"><![CDATA[Top of form]]></phrase>
+        <phrase key="locationFinder_form_bottom" module="admin"><![CDATA[Bottom of form]]></phrase>
+        <phrase key="locationFinder_place_in_form" module="admin"><![CDATA[Place in fields group]]></phrase>
+        <phrase key="locationFinder_position_type" module="admin"><![CDATA[Position in group]]></phrase>
+        <phrase key="locationFinder_prepend" module="admin"><![CDATA[Above all fields]]></phrase>
+        <phrase key="locationFinder_append" module="admin"><![CDATA[Below all fields]]></phrase>
+        <phrase key="locationFinder_settings_saved" module="admin"><![CDATA[Settings successfully saved.]]></phrase>
+	</phrases>
+
+	<uninstall>
+		<![CDATA[
+            global $rlDb;
+            
+            $sql = "ALTER TABLE `".RL_DBPREFIX."listings` DROP `lf_zoom`";
+            $rlDb -> query($sql);
+            
+            $sql = "ALTER TABLE `".RL_DBPREFIX."listings` DROP `lf_use`";
+            $rlDb -> query($sql);
+        ]]>
+	</uninstall>
+</plugin>

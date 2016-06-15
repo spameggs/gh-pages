@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<plugin name="currencyConverter">
+	<title>Currency Converter</title>
+	<description>Converts prices to a user's local currency based on his location</description>
+	<author>John Freeman</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>2.1.1</version>
+	<date>17.04.2012</date>
+	<controller>currencyConverter</controller>
+	
+	<files>
+		<file>currency.block.tpl</file>
+		<file>header.block.tpl</file>
+		<file>rlCurrencyConverter.class.php</file>
+		<file>admin/currencyConverter.inc.php</file>
+		<file>admin/currencyConverter.tpl</file>
+		<file>static/aStyle.css</file>
+		<file>static/gallery.png</file>
+		<file>static/lib.js</file>
+		<file>static/style.css</file>
+		<file>static/rtl.css</file>
+		<file>static/flags/dollar.png</file>
+	</files>
+
+	<install><![CDATA[
+	global $rlDb, $reefless;
+
+	$sql = "
+	CREATE TABLE `".RL_DBPREFIX."currency_rate` (
+	`ID` INT NOT NULL AUTO_INCREMENT ,
+	`Code` VARCHAR( 3 ) NOT NULL ,
+	`Key` VARCHAR( 15 ) NOT NULL ,
+	`Rate` DOUBLE NOT NULL ,
+	`Country` VARCHAR( 255 ) NOT NULL ,
+	`Symbol` varchar(255) CHARACTER SET utf8 NOT NULL,
+	`Date` DATE NOT NULL ,
+	`Status` ENUM( 'active', 'approval' ) DEFAULT 'active' NOT NULL ,
+	PRIMARY KEY ( `ID` )
+	) DEFAULT CHARSET=utf8 ";
+	
+	$rlDb -> query($sql);
+	
+	$reefless -> loadClass( 'CurrencyConverter', null, 'currencyConverter' );
+	$GLOBALS['rlCurrencyConverter'] -> insertRate('http://themoneyconverter.com/rss-feed/USD/rss.xml');
+	]]>
+	</install>
+	
+	<hooks>
+        <hook name="specialBlock"><![CDATA[
+			global $block_keys, $rlXajax, $rlSmarty;
+
+			$GLOBALS['reefless'] -> loadClass( 'CurrencyConverter', null, 'currencyConverter' );
+			
+			$rates = array();
+        	$rlSmarty -> assign_by_ref('curConv_rates', $rates);
+        	
+        	$GLOBALS['rlCurrencyConverter'] -> rates = $rates;
+			$GLOBALS['rlCurrencyConverter'] -> detectCurrency();
+			
+			if ( array_key_exists( 'currencyConvertor_block', $block_keys) )
+			{
+				$rlXajax -> registerFunction( array( 'setCurrency', $GLOBALS['rlCurrencyConverter'], 'ajaxSetCurrency' ) );
+			}
+		]]></hook>
+        <hook name="tplHeader"><![CDATA[
+        	$GLOBALS['rlSmarty'] -> display(RL_PLUGINS . 'currencyConverter' . RL_DS . 'header.block.tpl');
+        ]]></hook>
+        <hook name="apTplHeader"><![CDATA[
+			global $controller;
+			
+			if ( $controller == 'currencyConverter' )
+			{
+				echo '<link href="'. RL_PLUGINS_URL .'currencyConverter/static/aStyle.css" type="text/css" rel="stylesheet" />';
+			}
+		]]></hook>
+        <hook name="cronAdditional"><![CDATA[
+        	global $config;
+        	
+        	if ( $config['currencyConverter_update'] )
+        	{
+	        	$GLOBALS['reefless'] -> loadClass( 'CurrencyConverter', null, 'currencyConverter' );
+	        	$GLOBALS['rlCurrencyConverter'] -> updateRate();
+	        }
+        ]]></hook>
+        <hook name="listingsModifyWhereSearch"><![CDATA[
+        	global $config, $sql, $data, $requested_rate, $rlSmarty;
+		
+        	$field = $config['currencyConverter_price_field'];
+			/* if user search for currency */
+			if ( $data[$field]['currency'] )
+			{
+				$code = $data[$field]['currency'];
+				$requested_rate = $GLOBALS['rlCurrencyConverter'] -> rates[$code]['Rate'];
+				
+				if ( $requested_rate )
+				{
+					/* remove default search by price from sql request */
+					$pattern = array(
+						"/(\s+AND\sLOCATE\(\'.*\'\,\s\`T1\`\.\`{$field}\`\)\s\>\s[0-9\.\,]+)/",
+						"/(\s+AND\sROUND\(\`T1\`\.\`{$field}\`\)\s\>\=\s\'[0-9\.\,]+\')/",
+						"/(\s+AND\sROUND\(\`T1\`\.\`{$field}\`\)\s\<\=\s\'[0-9\.\,]+\')/"
+					);
+					$replace = array('');
+			
+					$sql = preg_replace($pattern, '', $sql);
+					
+					/* reassing user currency */
+					$_SESSION['curConv_code'] = $code;
+					$rlSmarty -> assign_by_ref('curConv_search_key', $code);
+
+					/* custom search */
+					$orig_from = $from = $data[$field]['from'];
+					if ( $from )
+					{
+						$from /= $requested_rate;
+						$sql .= "AND SUBSTRING_INDEX(`T1`.`{$field}`, '|', 1)/IF(`CURCONV`.`Rate` IS NULL, 1, `CURCONV`.`Rate`) >= {$from} ";
+					}
+					
+					$orig_to = $to = $data[$field]['to'];
+					if ( $to )
+					{
+						$to /= $requested_rate;
+						$sql .= "AND SUBSTRING_INDEX(`T1`.`{$field}`, '|', 1)/IF(`CURCONV`.`Rate` IS NULL, 1, `CURCONV`.`Rate`) <= {$to} ";
+					}
+					
+					if ( $orig_from || $orig_to )
+					{
+						$sql .= "AND `CURCONV`.`Rate` > 0 ";
+					}
+				}
+			}
+        ]]></hook>
+        <hook name="listingsModifyJoinSearch"><![CDATA[
+        	global $config, $sql, $data;
+		
+        	$field = $config['currencyConverter_price_field'];
+			/* if user search for currency */
+			if ( $data[$field]['currency'] || $data['sort_field'] == $field )
+			{
+				$sql .= "LEFT JOIN `" . RL_DBPREFIX . "currency_rate` AS `CURCONV` ON SUBSTRING_INDEX(`T1`.`{$field}`, '|', -1) = `CURCONV`.`Key` AND `CURCONV`.`Status` = 'active' ";
+			}
+        ]]></hook>
+         <hook name="listingsModifyFieldSearch"><![CDATA[
+        	global $config, $sql, $data, $custom_order;
+
+			$field = $config['currencyConverter_price_field'];
+			
+			/* if user search for currency */
+			if ( $data['sort_field'] == $field )
+			{
+				$sql .= "SUBSTRING_INDEX(`T1`.`{$field}`, '|', 1)/IF(`CURCONV`.`Rate` IS NULL, 1, `CURCONV`.`Rate`) AS `cc_price_tmp`, ";
+				$custom_order = 'cc_price_tmp';
+			}
+        ]]></hook>
+        <hook name="listingsModifyJoin"><![CDATA[
+	        global $config, $sql, $order_field;
+			
+			$field = $config['currencyConverter_price_field'];
+	
+			/* if user search for currency */
+			if ( $order_field == $field )
+			{
+				$sql .= "LEFT JOIN `" . RL_DBPREFIX . "currency_rate` AS `CURCONV` ON SUBSTRING_INDEX(`T1`.`{$field}`, '|', -1) = `CURCONV`.`Key` AND `CURCONV`.`Status` = 'active' ";
+			}
+        ]]></hook>
+        <hook name="listingsModifyField"><![CDATA[
+        	global $config, $sql, $order_field, $custom_order;
+
+			$field = $config['currencyConverter_price_field'];
+			
+			/* if user search for currency */
+			if ( $order_field == $field )
+			{
+				$sql .= "SUBSTRING_INDEX(`T1`.`{$field}`, '|', 1)/IF(`CURCONV`.`Rate` IS NULL, 1, `CURCONV`.`Rate`) AS `cc_price_tmp`, ";
+				$custom_order = 'cc_price_tmp';
+			}
+        ]]></hook>
+	</hooks>
+	
+	<configs key="currencyConverter" name="Currency Converter">
+		<![CDATA[]]>
+		<config key="currencyConverter_rss" name="Currency RSS feed" type="text" description="Probably you will have to edit REGEXP rules in the code in case if you wish to change this setting value"><![CDATA[http://themoneyconverter.com/rss-feed/USD/rss.xml]]></config>
+		<config key="currencyConverter_price_field" name="Price field key" type="text" description="Listings price field key"><![CDATA[price]]></config>
+		<config key="currencyConverter_position" name="Converted price position" type="select" values="after,above,below" description="Converted price position related of original listing price"><![CDATA[below]]></config>
+		<config key="currencyConverter_show_flag" name="Show flags" type="bool" description="Show currency/country flag icons"><![CDATA[1]]></config>
+		<config key="currencyConverter_update" name="Automatically update rates" type="bool"><![CDATA[1]]></config>
+		<config version="2.1.0" key="currencyConverter_featured" name="Converts prices of ads in featured boxes" type="bool"><![CDATA[0]]></config>
+	</configs>
+	
+	<block key="currencyConvertor_block" name="My Currency" side="left" type="smarty" tpl="1">
+		<![CDATA[{include file=$smarty.const.RL_PLUGINS|cat:'currencyConverter'|cat:$smarty.const.RL_DS|cat:'currency.block.tpl'}]]>
+	</block>
+	
+	<phrases>
+        <phrase key="currencyConverter_update_rate" module="admin"><![CDATA[Update Rates]]></phrase>
+        <phrase key="currencyConverter_add_currency" module="admin"><![CDATA[Add Currency]]></phrase>
+        <phrase key="currencyConverter_code_ext" module="ext"><![CDATA[Code]]></phrase>
+        <phrase key="currencyConverter_symbol_ext" module="ext"><![CDATA[Currency Symbols (use commas to separate values)]]></phrase>
+        <phrase key="currencyConverter_code" module="admin"><![CDATA[Currency Code]]></phrase>
+        <phrase key="currencyConverter_rate" module="admin"><![CDATA[Currency Rate]]></phrase>
+        <phrase key="currencyConverter_rate_ext" module="ext"><![CDATA[Rate]]></phrase>
+        <phrase key="currencyConverter_name_ext" module="ext"><![CDATA[Currency Name]]></phrase>
+        <phrase key="currencyConverter_name" module="admin"><![CDATA[Currency Name]]></phrase>
+        <phrase key="currencyConverter_na" module="frontEnd"><![CDATA[N/A]]></phrase>
+        <phrase key="currencyConverter_location" module="frontEnd"><![CDATA[Location]]></phrase>
+        <phrase key="currencyConverter_currency" module="frontEnd"><![CDATA[Currency]]></phrase>
+        <phrase key="currencyConverter_change" module="frontEnd"><![CDATA[Change]]></phrase>
+        <phrase key="currencyConverter_choose" module="frontEnd"><![CDATA[&nbsp;-//-]]></phrase>
+        <phrase key="currencyConverter_converted" module="frontEnd"><![CDATA[Converted price]]></phrase>
+        <phrase key="currencyConverter_ext_caption" module="ext"><![CDATA[Currency rates list (USD Exchange)]]></phrase>
+        <phrase key="currencyConverter_code_wrong" module="admin"><![CDATA[The currency code format is wrong, please use ISO codes format (<b>USD</b> for example)]]></phrase>
+        <phrase key="currencyConverter_rates_updated" module="admin"><![CDATA[Currency rates have been successfully updated]]></phrase>
+        <phrase key="currencyConverter_rate_wrong" module="admin"><![CDATA[The currency rate is wrong, please use double or integer numbers only]]></phrase>
+        <phrase key="currencyConverter_code_exists" module="admin"><![CDATA[The <b>{code}</b> code already exists]]></phrase>
+        <phrase key="currencyConverter_added_notice" module="admin"><![CDATA[New currency has been successfully added]]></phrase>
+        <phrase key="currencyConverter_update_confirm_notice" module="admin"><![CDATA[Are you sure you want to update/import currency rates?]]></phrase>
+        <phrase key="currencyConverter_update_rss_fail" module="admin"><![CDATA[Rate update fail, system unable to reach currency server]]></phrase>
+	</phrases>
+	
+	<uninstall>
+		<![CDATA[
+			global $rlDb, $reefless;
+			
+			$sql = "DROP TABLE `".RL_DBPREFIX."currency_rate`";
+			$rlDb -> query($sql);
+		]]>
+	</uninstall>
+</plugin>

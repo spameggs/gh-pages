@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="rating">
+	<title>Listing Rating</title>
+	<description>Ability to rate listings</description>
+	<author>John Freeman</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>2.1.1</version>
+	<date>31.12.2011</date>
+	
+	<files>
+		<file>rlRating.class.php</file>
+		<file>dom.tpl</file>
+		<file>listing.tpl</file>
+		<file>listing_details.tpl</file>
+		<file>static/stars.png</file>
+		<file>static/style.css</file>
+		<file>admin/listing_details.tpl</file>
+	</files>
+	
+	<install><![CDATA[
+	global $rlDb;
+	
+	$sql = "ALTER TABLE `".RL_DBPREFIX."listings` ADD `lr_rating` INT NOT NULL AFTER `Date`";
+	$rlDb -> query($sql);
+	
+	$sql = "ALTER TABLE `".RL_DBPREFIX."listings` ADD `lr_rating_votes` INT NOT NULL AFTER `lr_rating`";
+	$rlDb -> query($sql);	
+	]]>
+	</install>
+
+	<hooks>
+		<hook name="listingDetailsAfterStats"><![CDATA[
+			global $config;
+			if ( $config['rating_module'] )
+			{
+				$GLOBALS['rlSmarty'] -> display(RL_ROOT . 'plugins' . RL_DS . 'rating' . RL_DS . 'listing_details.tpl');
+			}
+		]]></hook>
+		<hook name="listingBeforeStats"><![CDATA[
+			global $config;
+			if ( $config['rating_module'] )
+			{
+				$GLOBALS['rlSmarty'] -> display(RL_ROOT . 'plugins' . RL_DS . 'rating' . RL_DS . 'listing.tpl');
+			}
+		]]></hook>
+		<hook name="tplHeader"><![CDATA[
+			echo '<link href="'.RL_PLUGINS_URL.'rating/static/style.css" type="text/css" rel="stylesheet" />';
+		]]></hook>
+		<hook version="2.1.0" name="listingDetailsBottom"><![CDATA[
+			global $rlXajax, $config, $listing_data, $account_info;
+
+			if ( $config['rating_module'] )
+			{
+				if ( !$config.rating_prevent_owner || ($config.rating_prevent_owner && $config.rating_prevent_owner && $listing_data.Account_ID != $account_info.ID) )
+				{
+					$GLOBALS['reefless'] -> loadClass('Rating', null, 'rating');
+					$rlXajax -> registerFunction( array( 'rate', $GLOBALS['rlRating'], 'ajaxRate' ) );
+				}
+				
+				global $listing_data;
+				$GLOBALS['rlSmarty'] -> assign_by_ref('listing_data', $listing_data);
+				
+				$voted = explode(',', $_COOKIE['rating']);
+				if ( in_array( $listing_data['ID'], $voted ) )
+				{
+					$GLOBALS['rlSmarty'] -> assign('rating_denied', 'true');
+				}
+			}
+		]]></hook>
+		<hook name="apExtListingsDataMiddle"><![CDATA[
+			global $config, $lang, $value, $fields_html;
+			if ( $config['rating_module'] )
+			{
+				$average_rating = round($value['lr_rating'] / $value['lr_rating_votes'], 1);
+				$fields_html .= '<tr><td style="padding: 0 5px 4px;">'. $lang['rating_rating'] .':</td><td><b>'. $average_rating .'</b></td></tr>';
+			}
+		]]></hook>
+		<hook name="apTplListingAfterStats"><![CDATA[
+			global $config;
+			if ( $config['rating_module'] )
+			{
+				$GLOBALS['rlSmarty'] -> display(RL_ROOT . 'plugins' . RL_DS . 'rating' . RL_DS .'admin'. RL_DS . 'listing_details.tpl');
+			}
+		]]></hook>
+		<hook name="apTplHeader"><![CDATA[
+			echo '<link href="'.RL_PLUGINS_URL.'rating/static/admin_style.css" type="text/css" rel="stylesheet" />';
+		]]></hook>
+	</hooks>
+
+	<phrases>
+		<phrase key="rating_rating" module="common"><![CDATA[Rating]]></phrase>
+		<phrase key="rating_vote_accepted" module="frontEnd"><![CDATA[Your vote has been accepted, thank you for participation.]]></phrase>
+		<phrase key="rating_static" module="frontEnd"><![CDATA[Thank you for voting!]]></phrase>
+		<phrase key="rating_current_rating" module="common"><![CDATA[Current rating]]></phrase>
+		<phrase key="rating_total_votes" module="common"><![CDATA[Total votes]]></phrase>
+		<phrase key="rating_set" module="common"><![CDATA[Set {number} stars]]></phrase>
+		<phrase version="2.0.1" key="rating_prevent_visitor" module="frontEnd"><![CDATA[Please log in to rate the listing]]></phrase>
+		<phrase version="2.1.0" key="rating_prevent_owner" module="frontEnd"><![CDATA[You are unable to rate own listing]]></phrase>
+	</phrases>
+
+	<configs key="rating_group" name="Listing Rating">
+		<![CDATA[]]>
+		<config key="rating_module" name="Listing Rating Module" type="bool"><![CDATA[1]]></config>
+		<config key="rating_stars_number" name="Stars number" type="text" validate="int"><![CDATA[5]]></config>
+		<config version="2.0.1" key="rating_prevent_visitor" name="Prevent guests from rating listings" type="bool"><![CDATA[0]]></config>
+		<config version="2.1.0" key="rating_prevent_owner" name="Prevent users from rating their own listings" type="bool"><![CDATA[0]]></config>
+	</configs>
+
+	<uninstall><![CDATA[
+	global $rlDb;
+	$sql = "ALTER TABLE `".RL_DBPREFIX."listings` DROP `lr_rating`";
+	$rlDb -> query($sql);
+	
+	$sql = "ALTER TABLE `".RL_DBPREFIX."listings` DROP `lr_rating_votes`";
+	$rlDb -> query($sql);
+	
+	$_COOKIE['rating'] = '';
+	]]>
+	</uninstall>
+</plugin>

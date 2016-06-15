@@ -1,0 +1,5 @@
+Flynax SMS Account Activation Plugin is developed for a convenient activation of user's site accounts by SMS. Also this plugin is useful to confirm user cell phone number if you are interested in it. Thus this plugin provides you with two core features and if you are interested in these features then the plugin will be useful for you.
+
+How it works? During an account registration a user indicates his cell phone number and plugin sends an activation code to the indicated mobile number. After that the user has to enter that activation code into their account for activation of his account and relevant services. Before the activation user has only one option that only allows activating his account.
+
+Flynax SMS Account Activation Plugin is connected to clickatel SMS service that provides services by SMS. For appropriate operation of the plugin you need to register a clickatel account and active balance.

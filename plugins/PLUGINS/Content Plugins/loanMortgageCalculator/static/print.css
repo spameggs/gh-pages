@@ -1,0 +1,133 @@
+body, html
+{
+	height: 100%;
+}
+body
+{
+	margin: 0px auto;
+	font-family: Arial;
+	background: white;
+	font-size: 17px;
+	color: #232323;
+}
+
+h1
+{
+	color: #232323;
+	font-size: 22px;
+	margin: 0;
+	padding: 0 0 10px 0;
+}
+div.container
+{
+	width: 960px;
+	margin: 0 auto;
+	padding: 20px 0;
+}
+
+div.clear
+{
+	clear: both;
+}
+div.info
+{
+	overflow: hidden;
+}
+div.photo
+{
+	width: 350px;
+	float: right;
+	padding: 0 0 0 20px;
+}
+div.photo img
+{
+	width: 350px;
+}
+
+table
+{
+	border-collapse: collapse;
+	border-spacing: 0;
+	border-padding: 0;
+	border: 0px;
+}
+table td
+{
+	border: 0;
+	padding: 0;
+	margin: 0;
+}
+
+table.table tr > td
+{
+	vertical-align: center;
+	padding: 3px 0;
+}
+table.table tr > td:first-child
+{
+	padding: 3px 10px 3px 0;
+	color: #4d4d4d;
+	max-width: 160px;
+	font-style: italic;
+}
+table.table td.divider
+{
+	font-style: normal !important;
+	padding-top: 15px !important;
+	font-weight: bold;
+	color: #232323 !important;
+}
+div.caption
+{
+	padding: 25px 0 20px;
+	font-size: 20px;
+	text-align: center;
+	clear: both;
+}
+div.section
+{
+	width: 50%;
+	float: left;
+}
+div.section > div
+{
+	padding: 0 0 20px;
+}
+div.section > div.left
+{
+	padding-right: 15px;
+}
+div.section > div.right
+{
+	padding-left: 15px;
+}
+div.section > div > div.caption,
+div.section-wide > div.caption
+{
+	padding: 6px 0 8px;
+	background: #e8e8e8;
+	font-size: 18px;
+	margin-bottom: 10px;
+}
+div.section-wide div.body
+{
+	padding: 0 0 50px;
+}
+
+table.list
+{
+	width: 100%;
+}
+table.list td.divider
+{
+	width: 5px;
+}
+table.list td
+{
+	padding: 3px 0 5px;
+}
+table.list tr.header td:not(.divider)
+{
+	padding: 4px 0 6px!important;
+	border-bottom: 1px #ccc solid;
+}

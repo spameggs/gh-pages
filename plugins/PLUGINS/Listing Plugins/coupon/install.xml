@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="coupon">
+	<title>Coupon Code</title>
+	<description>Add discount for listings price</description>
+	<author>Dmitry Azavanichus</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>2.0.3</version>
+	<date>16.03.2012</date>
+	<controller>coupon</controller>
+	
+	<notice><![CDATA[Now you can create coupon codes and provide sellers with them, just go to Admin Panel &raquo; Coupon Code Manager and start to handle new functionality.]]></notice>
+	<files>
+		<file>coupon.block.tpl</file>
+		<file>coupon_price_info.tpl</file>
+		<file>rlCouponCode.class.php</file>
+		<file>admin/coupon.inc.php</file>
+		<file>admin/coupon.tpl</file>
+	</files>
+	
+	<install><![CDATA[
+	global $rlDb;
+	
+	$sql = "
+	CREATE TABLE `".RL_DBPREFIX."coupon_code` (
+	`ID` int(3) NOT NULL auto_increment,
+	`Plan_ID` tinytext NOT NULL,
+	`Sticky` enum('1','0') NOT NULL default '0',
+	`Account_or_type` enum('type','account') NOT NULL default 'type',
+	`Account_type` varchar(50) NOT NULL default '',
+	`Username` varchar(50) NOT NULL default '',
+	`Code` varchar(50) NOT NULL default '',
+	`Used_date` enum('yes','no') NOT NULL default 'yes',
+	`Date_release` datetime NOT NULL default '0000-00-00 00:00:00',
+	`Date_from` date NOT NULL default '0000-00-00',
+	`Date_to` date NOT NULL default '0000-00-00',
+	`Discount` int(5) NOT NULL default '0',
+	`Type` enum('persent','cost') NOT NULL default 'persent',
+	`Using_limit` int(5) NOT NULL default '0',		
+	`Status` enum('active','approval') NOT NULL default 'active',
+	 KEY `ID` (`ID`)
+	) CHARSET=utf8";
+	
+	$rlDb -> query($sql);
+
+	$sql = "
+	CREATE TABLE `".RL_DBPREFIX."coupon_users` (
+	`ID` INT( 10 ) NOT NULL AUTO_INCREMENT ,
+	`Account_ID` INT( 6 ) NOT NULL ,
+	`Coupon_ID` INT( 6 ) NOT NULL ,
+	`Plan_ID` INT( 10 ) NOT NULL ,
+	INDEX ( `ID` )
+	)CHARSET=utf8";
+	$rlDb -> query($sql);
+	]]>
+	</install>
+
+	<hooks>
+		<hook name="paymentGateway">
+			<![CDATA[
+				$tpl = RL_PLUGINS .'coupon'. RL_DS .'coupon.block.tpl';
+				$GLOBALS['rlSmarty'] -> display( $tpl );	
+			]]>
+		</hook>
+		<hook name="specialBlock">
+			<![CDATA[global $page_info;
+				if($page_info['Key']=='add_listing' || $page_info['Key']=='upgrade_listing')
+				{
+					$GLOBALS['reefless'] -> loadClass('CouponCode', null, 'coupon');
+					$GLOBALS['rlXajax'] -> registerFunction( array( 'checkCouponCode', $GLOBALS['rlCouponCode'], 'ajaxcheckCouponCode' ) );
+				}
+			]]>
+		</hook>
+		<hook name="addListingCheckoutPreRedirect">
+			<![CDATA[global $steps, $config, $plan_info, $page_info, $category;
+				if (!empty($_POST['coupon_code']))
+				{
+					$GLOBALS['reefless']->loadClass('CouponCode', null, 'coupon');
+					if( !empty($_SESSION['coupon_code']) && $_SESSION['coupon_code'] == $_POST['coupon_code'])
+					{
+						$price = $GLOBALS['rlCouponCode'] -> editPrice($plan_info, $_POST['coupon_code']);
+						if( $price == 0 )
+						{
+							$step = array_pop($steps);
+							/* redirect to related controller */
+							$redirect = SEO_BASE;
+							$redirect .= $config['mod_rewrite'] ? $page_info['Path'] .'/'. $category['Path'] .'/'. $step['path'] .'.html' : '?page='. $page_info['Path'] .'&id='. $category['ID'] .'&step=' .$step['path'];
+							$GLOBALS['reefless'] -> redirect( null, $redirect );
+						}
+					}
+			}]]>
+		</hook>
+		<hook name="paymentController">
+			<![CDATA[global $payment, $price;					
+				$GLOBALS['reefless'] -> loadClass('CouponCode', null, 'coupon');
+				$plan_info = $payment['plan_info'];
+				if ($_SESSION['coupon_code'])
+				{
+					$coupon_code=$_SESSION['coupon_code'];
+					$price = $GLOBALS['rlCouponCode'] -> editPrice($plan_info, $coupon_code);
+				}
+			]]>
+		</hook>
+		<hook name="afterListingDone">
+			<![CDATA[global $reefless, $rlDb, $plan_info;
+				$coupon_id = $rlDb -> getOne( 'ID',  "`Using_limit` <> 0 AND `Code` = '{$_SESSION['coupon_code']}'" , 'coupon_code' );
+				if( $coupon_id )
+				{
+					$rlDb -> query( "INSERT INTO `" . RL_DBPREFIX . "coupon_users` (`Coupon_ID`, `Account_ID`, `Plan_ID`) VALUES('{$coupon_id}', '{$_SESSION['account']['ID']}', '{$plan_info['ID']}')" );
+				}
+				unset($_SESSION['coupon_code']);
+			]]>
+		</hook>
+		<hook version="2.0.2" name="phpListingsUpgradePlanInfo">
+			<![CDATA[global $plan_info, $rlDb;
+				$GLOBALS['reefless']->loadClass('CouponCode', null, 'coupon');
+				if( !empty($_SESSION['coupon_code']) && $_SESSION['coupon_code'] == $_POST['coupon_code'])
+				{
+					$plan_info['Price'] = $GLOBALS['rlCouponCode'] -> editPrice($plan_info, $_POST['coupon_code']);				
+					$coupon_id = $rlDb -> getOne( 'ID',  "`Using_limit` <> 0 AND `Code` = '{$_SESSION['coupon_code']}'" , 'coupon_code' );
+					if( $coupon_id )
+					{
+						$rlDb -> query( "INSERT INTO `" . RL_DBPREFIX . "coupon_users` (`Coupon_ID`, `Account_ID`, `Plan_ID`) VALUES('{$coupon_id}', '{$_SESSION['account']['ID']}', '{$plan_info['ID']}')" );
+						
+					}
+					unset($_SESSION['coupon_code']);
+				}
+			]]>
+		</hook>
+		<hook version="2.0.1" name="phpMyPackagesTop">
+			<![CDATA[
+				$GLOBALS['reefless'] -> loadClass('CouponCode', null, 'coupon');
+				$GLOBALS['rlXajax'] -> registerFunction( array( 'checkCouponCode', $GLOBALS['rlCouponCode'], 'ajaxcheckCouponCode' ) );
+			]]>
+		</hook>
+		<hook version="2.0.3" name="phpMyPackagesPurchasePreAction">
+			<![CDATA[global $plan_info, $rlDb;
+				$GLOBALS['reefless'] -> loadClass('CouponCode', null, 'coupon');					
+				if ($_SESSION['coupon_code'])
+				{
+					$coupon_code=$_SESSION['coupon_code'];
+					$plan_info['Price'] = $GLOBALS['rlCouponCode'] -> editPrice($plan_info, $coupon_code);
+					$coupon_id = $rlDb -> getOne( 'ID',  "`Using_limit` <> 0 AND `Code` = '{$coupon_code}'" , 'coupon_code' );
+					if( $coupon_id )
+					{
+						$rlDb -> query( "INSERT INTO `" . RL_DBPREFIX . "coupon_users` (`Coupon_ID`, `Account_ID`, `Plan_ID`) VALUES('{$coupon_id}', '{$_SESSION['account']['ID']}', '{$plan_info['ID']}')" );
+						
+					}
+					unset($_SESSION['coupon_code']);
+				}
+			]]>
+		</hook>
+		<hook version="2.0.3" name="phpMyPackagesRenewValidate">
+			<![CDATA[global $packages, $pack_info, $rlDb;
+				if ( $_GET['renew'] )
+				{
+					$pack_id = $_GET['renew'];
+					$plan_info['ID'] = $packages[$pack_id]['Plan_ID'];
+					$GLOBALS['rlSmarty'] -> assign_by_ref('plan_info', $plan_info);
+					
+					if ( !$_POST['xjxfun'] && $_SESSION['coupon_code'])
+					{
+						$GLOBALS['reefless'] -> loadClass('CouponCode', null, 'coupon');
+						$coupon_code = $_SESSION['coupon_code'];
+						$pack_info['Price'] = $GLOBALS['rlCouponCode'] -> editPrice($pack_info, $coupon_code);
+						$coupon_id = $rlDb -> getOne( 'ID',  "`Using_limit` <> 0 AND `Code` = '{$coupon_code}'" , 'coupon_code' );
+						if( $coupon_id )
+						{
+							$rlDb -> query( "INSERT INTO `" . RL_DBPREFIX . "coupon_users` (`Coupon_ID`, `Account_ID`, `Plan_ID`) VALUES('{$coupon_id}', '{$_SESSION['account']['ID']}', '{$plan_info['ID']}')" );
+							
+						}
+						unset($_SESSION['coupon_code']);
+					}
+				}
+			]]>
+		</hook>
+	</hooks>
+
+	<phrases>		
+		<phrase key="ext_coupon_code" module="ext"><![CDATA[Coupon code]]></phrase>
+		<phrase key="ext_coupon_discount" module="ext"><![CDATA[Discount]]></phrase>
+		<phrase key="ext_coupon_persent" module="ext"><![CDATA[Percent]]></phrase>
+		<phrase key="ext_coupon_code" module="ext"><![CDATA[Coupon code]]></phrase>
+		<phrase key="ext_coupon_cost" module="ext"><![CDATA[Amount]]></phrase>
+		<phrase key="ext_edit_date" module="ext"><![CDATA[Click here to update]]></phrase>
+		<phrase key="ext_overdue" module="ext"><![CDATA[Overdue]]></phrase>				
+		<phrase key="ext_using_limit" module="ext"><![CDATA[Usage Limit]]></phrase>				
+		<phrase key="coupon_persent" module="admin"><![CDATA[Percent]]></phrase>
+		<phrase key="coupon_generate_code" module="admin"><![CDATA[Generate code]]></phrase>
+		<phrase key="add_coupon" module="admin"><![CDATA[Add a new coupon code]]></phrase>
+		<phrase key="edit_coupon" module="admin"><![CDATA[Edit the coupon code]]></phrase>
+		<phrase key="available_coupone" module="admin"><![CDATA[Available from]]></phrase>
+		<phrase key="used_date" module="admin"><![CDATA[Set a duration ]]></phrase>
+		<phrase key="using_limit" module="admin"><![CDATA[Usage Limit]]></phrase>
+		<phrase key="coupon_for" module="admin"><![CDATA[Active for]]></phrase>
+		<phrase key="coupon_using_limit_tip" module="admin"><![CDATA[Enter 0 to make it unlimited]]></phrase>
+		<phrase key="coupon_type" module="admin"><![CDATA[Discount Type ]]></phrase>
+		<phrase key="coupon_cost" module="admin"><![CDATA[Amount]]></phrase>
+		<phrase key="coupon_discount" module="common"><![CDATA[Discount]]></phrase>
+		<phrase key="coupon_reject" module="common"><![CDATA[Reject]]></phrase>
+		<phrase key="coupon_code" module="common"><![CDATA[Coupon code]]></phrase>
+		<phrase key="coupon_code_limit" module="common"><![CDATA[Coupon code must contain more than 1 character.]]></phrase>
+		<phrase key="your_coupon_limit_is_over" module="common"><![CDATA[You have exceeded the usage limit for the coupon code, please use another one.]]></phrase>
+		<phrase key="coupon_not_found" module="common"><![CDATA[No coupon code has been found in the database.]]></phrase>
+		<phrase key="coupon_not_account" module="common"><![CDATA[You cannot use the coupon code under this account.]]></phrase>
+		<phrase key="coupon_expired" module="common"><![CDATA[The coupon code has expired or is inactive.]]></phrase>
+		<phrase version="2.0.1" key="coupon_not_plan" module="common"><![CDATA[You cannot use the coupon code for this plan.]]></phrase>
+	</phrases>
+
+	<uninstall>
+		<![CDATA[global $rlDb;
+				$sql = "DROP TABLE `".RL_DBPREFIX."coupon_code`";
+				$rlDb -> query($sql);
+				$sql = "DROP TABLE `".RL_DBPREFIX."coupon_users`";
+				$rlDb -> query($sql);]]>
+	</uninstall>
+</plugin>

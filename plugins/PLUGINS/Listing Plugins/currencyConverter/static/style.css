@@ -1,0 +1,37 @@
+/* currency convertor styles */
+
+label.flag
+{
+	background-repeat: no-repeat;
+	background-position: left center;
+	padding: 0 0 0 23px;
+	margin: 0 0 0 5px;
+}
+div#listings div.item label.disp-block,
+ul.featured li.item label.disp-block
+{
+	display: block;
+	margin: 0 0 0 0;
+}
+div#listings div.list div.item label.disp-block
+{
+	display: inline;
+	margin: 0 0 0 5px;
+}
+div#listings div.list div.item td.fields span:not(:last-child) label.cc-converted:after
+{
+	content: ',';
+}
+
+td.details label.disp-block
+{
+	display: block;
+	margin: 0 0 0 0;
+}
+
+td.details label.flag
+{
+	background-position: left -2px;
+}
+
+/* currency convertor styles end */

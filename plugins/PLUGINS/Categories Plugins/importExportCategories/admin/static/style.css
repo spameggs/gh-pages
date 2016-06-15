@@ -1,0 +1,4 @@
+.unckeked { opacity: 0.4; }
+.importBorder { border: 1px solid; padding-left:3px; }
+.exist td { background: #F09C7E !important; opacity: 0.4; }
+a.button_bar span.center_export { padding: 0px 7px 0 25px; background: url('export.png') 0 0 no-repeat; }

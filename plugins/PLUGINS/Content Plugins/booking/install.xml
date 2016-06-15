@@ -1,0 +1,486 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="booking">
+	<title>Booking System</title>
+	<description>Booked listings</description>
+	<author>Alex</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>2.0.2</version>
+	<date>27.07.2011</date>
+	<controller>booking</controller>
+	<notices>
+		<notice><![CDATA[Follow the link: <a target="_blank" href="http://www.flynax.com/forum/showthread.php?630-Configuring-the-Booking-Plugin-v2">Configuring the Booking Plugin v2</a>]]></notice>
+	</notices>
+	<files>
+		<file>admin/booking.inc.php</file>
+		<file>admin/booking.tpl</file>
+		<file>admin/gdplus_gradients.php</file>
+		<file>rlBooking.class.php</file>
+		<file>rlBoookingFields.class.php</file>
+		<file>rate_range.tpl</file>
+		<file>ranges.inc.php</file>
+		<file>nav_bar.tpl</file>
+		<file>listing_rate_ranges.tpl</file>
+		<file>listing.tpl</file>
+		<file>booking_tab.tpl</file>
+		<file>booking_requests.tpl</file>
+		<file>booking_requests.inc.php</file>
+		<file>booking_fields.tpl</file>
+		<file>booking_details.tpl</file>
+		<file>booking_details.inc.php</file>
+		<file>booking_calendar.tpl</file>
+		<file>booking.css</file>
+		<file>binding_days.tpl</file>
+		<file>availability_listings.tpl</file>
+		<file>availability_listings.inc.php</file>
+		<file>availability_block.tpl</file>
+	</files>
+
+	<install>
+	<![CDATA[
+		global $rlDb, $rlListingTypes, $rlCache;
+
+		$sql_fields = "
+		CREATE TABLE `". RL_DBPREFIX ."booking_fields` (
+		   `ID` int(11) not null auto_increment,
+		   `Key` varchar(255) not null,
+		   `Type` enum('bool','text','textarea','number','date','mixed','price','unit','select','radio','checkbox','file','accept','image') not null default 'text',
+		   `Default` varchar(255) not null,
+		   `Values` mediumtext not null,
+		   `Condition` varchar(50) not null,
+		   `Required` enum('0','1') not null default '0',
+		   `Position` int(3),
+		   `Status` enum('active','approval','trash') not null default 'active',
+		   PRIMARY KEY (`ID`),
+		   KEY `Key` (`Key`),
+		   KEY `Status` (`Status`)
+		) DEFAULT CHARSET=utf8";
+		$rlDb -> query( $sql_fields );
+
+		$sql_rate_range = "
+		CREATE TABLE `". RL_DBPREFIX ."booking_rate_range` (
+		   `ID` int(11) not null auto_increment,
+		   `Listing_ID` int(11),
+		   `From` varchar(10) not null,
+		   `To` varchar(10) not null,
+		   `Price` varchar(50),
+		   `Status` enum('active','approval') default 'active',
+		   PRIMARY KEY (`ID`)
+		) DEFAULT CHARSET=utf8";
+		$rlDb -> query( $sql_rate_range );
+
+		$sql_requests = "
+		CREATE TABLE `". RL_DBPREFIX ."booking_requests` (
+		   `ID` int(11) not null auto_increment,
+		   `Book_ID` int(11),
+		   `Owner_ID` int(11),
+		   `Renter_ID` int(11) default '0',
+		   `Date` datetime,
+		   `Status` enum('new','readed') default 'new',
+		   `first_name` varchar(55) not null,
+		   `last_name` varchar(55) not null,
+		   `email` varchar(255) not null,
+		   PRIMARY KEY (`ID`)
+		) DEFAULT CHARSET=utf8";
+		$rlDb -> query( $sql_requests );
+
+		$sql_book = "
+		CREATE TABLE `". RL_DBPREFIX ."listings_book` (
+		   `ID` int(11) not null auto_increment,
+		   `Listing_ID` int(11),
+		   `From` varchar(10) not null,
+		   `To` varchar(10) not null,
+		   `Amount` varchar(55) NOT NULL default '',
+		   `Status` enum('process','booked','refused') default 'process',
+		   PRIMARY KEY (`ID`)
+		) DEFAULT CHARSET=utf8";
+		$rlDb -> query( $sql_book );
+
+		$sql_binding = "
+		CREATE TABLE `". RL_DBPREFIX ."booking_bindings` (
+		   `ID` int(11) not null auto_increment,
+		   `Listing_ID` int(11),
+		   `Checkin` varchar(255),
+		   `Checkout` varchar(255),
+		   `Status` enum('active','approval') default 'active',
+		   PRIMARY KEY (`ID`)
+		) DEFAULT CHARSET=utf8";
+		$rlDb -> query( $sql_binding );
+
+		$sql_listing_fields = "
+		INSERT INTO `". RL_DBPREFIX ."listing_fields` (`Key`, `Type`, `Default`, `Values`, `Condition`, `Details_page`, `Add_page`, `Required`, `Map`, `Status`) VALUES
+		('check_availability', 'date', 'single', '', '', '0', '0', '0', '0', 'active'),
+		('booking_module', 'bool', '0', '', '', '0', '1', '0', '0', 'active')";
+		$rlDb -> query( $sql_listing_fields );
+
+		$bInsertID = mysql_insert_id();
+		$fBookingCheckAvailabilityID = $bInsertID;
+		$fBookingModuleID = $bInsertID + 1;
+
+		$rlDb -> query("INSERT INTO `". RL_DBPREFIX ."listing_groups` (`Key`, `Display`, `Status`) VALUES ('booking_rates', '1', 'active')");
+		$lGroupId = mysql_insert_id();
+
+		$insertFieldTrigger = false;
+		$insertField = "INSERT INTO `". RL_DBPREFIX ."listing_relations` (`Position`, `Category_ID`, `Group_ID`, `Fields`) VALUES ";
+		foreach($rlListingTypes -> types as $lKey => $lType)
+		{
+			if ( $lType['Cat_general_cat'] )
+			{
+				$insertField .= "( '99', '{$lType['Cat_general_cat']}', '{$lGroupId}', '{$fBookingModuleID}' ),";
+				$insertFieldTrigger = true;
+			}
+		}
+
+		if ( $insertFieldTrigger )
+		{
+			$insertField = rtrim($insertField, ',');
+			$rlDb -> query($insertField);
+		}
+		$rlDb -> query("ALTER TABLE `". RL_DBPREFIX ."listings` ADD `booking_module` ENUM( '0', '1' ) NOT NULL DEFAULT '0' AFTER `Status` ");
+
+		$sql_insert_fields = "
+		INSERT INTO `". RL_DBPREFIX ."booking_fields` (`Key`, `Type`, `Default`, `Values`, `Condition`, `Required`, `Position`, `Status`) VALUES
+		('first_name', 'text', '', '55', '', '1', '1', 'active'),
+		('last_name', 'text', '', '55', '', '1', '1', 'active'),
+		('email', 'text', '0', '255', 'isEmail', '1', '2', 'active')";
+		$rlDb -> query( $sql_insert_fields );
+
+		$expo = "#9b9fdb|#b0fcbb|#fac0c3|#ad91ad|#f6f6f6|176,252,187|250,192,195|173,145,173|246,246,246";
+		$add  = "INSERT INTO `". RL_DBPREFIX ."config` (`Key`,`Group_ID`,`Default`,`Plugin`) ";
+		$add .= "VALUES ('booking_colors', '0', '{$expo}', 'booking'),";
+		$add .= "('booking_plans', '0', '0', 'booking'),";
+		$add .= "('booking_price_field', '0', 'price', 'booking'),";
+		$add .= "('booking_time_frame', '0', 'null', 'booking'),";
+		$add .= "('booking_fields_ids', '0', '{$fBookingCheckAvailabilityID}|{$fBookingModuleID}', 'booking')";
+		$rlDb -> query( $add );
+
+		// page for block
+		$rlDb -> query("UPDATE `". RL_DBPREFIX ."blocks` SET `Sticky` = '0', `Page_ID` = '1' WHERE `Key` = 'booking_availability_block'");
+
+		// update cache
+		$rlCache -> updateForms();
+	]]>
+	</install>
+
+	<hooks>
+		<hook name="specialBlock">
+		<![CDATA[
+			global $page_info;
+
+			if ( in_array($page_info['Controller'], array('edit_listing', 'add_listing')) )
+			{
+				$GLOBALS['reefless'] -> loadClass('Booking', false, 'booking');
+				$GLOBALS['rlXajax'] -> registerFunction(array('deleteRateRange', $GLOBALS['rlBooking'], 'ajaxDeleteRateRange'));
+			}
+		]]>
+		</hook>
+		<hook version="2.0.2" name="listingsModifyFieldSearch">
+		<![CDATA[
+			$GLOBALS['reefless'] -> loadClass('Booking', false, 'booking');
+			$GLOBALS['rlBooking'] -> modifyFieldSearch();
+		]]>
+		</hook>
+		<hook version="2.0.2" name="listingsModifyJoinSearch">
+		<![CDATA[
+			$GLOBALS['reefless'] -> loadClass('Booking', false, 'booking');
+			$GLOBALS['rlBooking'] -> modifyJoinSearch();
+		]]>
+		</hook>
+		<hook version="2.0.2" name="listingsModifyWhereSearch">
+		<![CDATA[
+			$GLOBALS['reefless'] -> loadClass('Booking', false, 'booking');
+			$GLOBALS['rlBooking'] -> modifyWhereSearch();
+		]]>
+		</hook>
+		<hook version="2.0.2" name="listingsModifyGroupSearch">
+		<![CDATA[
+			$GLOBALS['reefless'] -> loadClass('Booking', false, 'booking');
+			$GLOBALS['rlBooking'] -> modifyGroupSearch();
+		]]>
+		</hook>
+		<hook name="myListingsIcon">
+		<![CDATA[
+			$GLOBALS['rlSmarty'] -> display(RL_PLUGINS .'booking' . RL_DS . 'nav_bar.tpl');
+		]]>
+		</hook>
+		<hook name="listingDetailsTop">
+		<![CDATA[
+			$GLOBALS['reefless'] -> loadClass('Booking', false, 'booking');
+			$GLOBALS['rlBooking'] -> prepareBookingTab();
+		]]>
+		</hook>
+		<hook name="listingDetailsBottom">
+		<![CDATA[
+			global $lang, $tabs;
+
+			if ( RL_DISPLAY_CALENDAR )
+			{
+				$tabs['booking'] = array(
+					'key' => 'booking',
+					'name' => $lang['booking_booking_tab']
+				);
+			}
+		]]>
+		</hook>
+		<hook name="listingDetailsBottomTpl">
+		<![CDATA[
+			if ( RL_DISPLAY_CALENDAR )
+			{
+				$GLOBALS['rlSmarty'] -> display(RL_PLUGINS .'booking' . RL_DS . 'booking_tab.tpl');
+			}
+		]]>
+		</hook>
+		<hook name="addListingPreFields">
+		<![CDATA[
+			$GLOBALS['rlSmarty'] -> display(RL_PLUGINS .'booking' . RL_DS . 'listing_rate_ranges.tpl');
+		]]>
+		</hook>
+		<hook name="editListingPreFields">
+		<![CDATA[
+			$GLOBALS['rlSmarty'] -> display(RL_PLUGINS .'booking' . RL_DS . 'listing_rate_ranges.tpl');
+		]]>
+		</hook>
+		<hook name="afterListingEdit">
+		<![CDATA[
+			$GLOBALS['reefless'] -> loadClass('Booking', false, 'booking');
+			$GLOBALS['rlBooking'] -> saveRateRangesFromListing();
+		]]>
+		</hook>
+		<hook name="afterListingCreate">
+		<![CDATA[
+			$GLOBALS['reefless'] -> loadClass('Booking', false, 'booking');
+			$GLOBALS['rlBooking'] -> saveRateRangesFromListing();
+		]]>
+		</hook>
+		<hook name="apTplHeader">
+			<![CDATA[
+				if ( $_GET['controller'] == 'booking' && $_GET['mode'] == 'booking_colors' )
+				{
+					echo '<script type="text/javascript" src="'. RL_LIBS_URL .'jquery/colorpicker/js/colorpicker.js"></script>';
+				}
+			]]>
+		</hook>
+	</hooks>
+
+	<blocks>
+		<block key="booking_availability_block" login="0" name="Availability Block" side="left" type="smarty" tpl="1">
+		<![CDATA[
+			{include file = $smarty.const.RL_PLUGINS|cat:'booking'|cat:$smarty.const.RL_DS|cat:'availability_block.tpl'}
+		]]>
+		</block>
+	</blocks>
+
+	<pages>
+		<page key="booking_requests" name="Booking Requests" type="system" path="booking-requests" get="" controller="booking_requests" menus="2" tpl="1" login="1"><![CDATA[]]></page>
+		<page key="booking_details" name="Booking Details" type="system" path="booking-details" get="" controller="booking_details" menus="" tpl="1" login="1"><![CDATA[]]></page>
+		<page key="availability_listings" name="Availability Listings" type="system" path="availability-listings" get="" controller="availability_listings" menus="" tpl="1" login="0"><![CDATA[]]></page>
+	</pages>
+
+	<emails>
+		<email key="booking_accepted_request" subject="You request accepted"><![CDATA[Dear {renter},
+You booking request has been accepted by listing owner.
+Listing owner comment:
+
+{BODY}
+
+______________________________
+{site_name}
+{owner}]]></email>
+		<email key="booking_refused_request" subject="You request refused"><![CDATA[Dear {renter},
+You booking request has beem rejected.
+Rejection cause:
+
+{BODY}
+
+______________________________
+{site_name}
+{owner}]]></email>
+<email key="booking_new_request_notify" subject="Booking Notification"><![CDATA[
+Booking request at {date}
+
+<b>Booking Details</b>
+Check In: {checkin}
+Check Out: {checkout}
+Amount: {amount}
+
+<b>Client Details</b>
+{details}
+
+______________________________
+{site_name}
+]]></email>
+	</emails>
+
+	<phrases>
+		<phrase key="booking_button_cancel" module="common"><![CDATA[Cancel]]></phrase>
+		<phrase key="booking_availability_error" module="common"><![CDATA[Fields in Availability Block is empty. Please fill.]]></phrase>
+		<phrase key="booking_calendar" module="frontEnd"><![CDATA[Booking Calendar]]></phrase>
+		<phrase key="booking_checkin" module="common"><![CDATA[Check-in]]></phrase>
+		<phrase key="booking_checkout" module="common"><![CDATA[Check-out]]></phrase>
+		<phrase key="booking_next_step" module="frontEnd"><![CDATA[Next Step]]></phrase>
+		<phrase key="booking_prev_step" module="frontEnd"><![CDATA[Previous Step]]></phrase>
+		<phrase key="booking_remove_confirm" module="common"><![CDATA[Are you sure you want to remove this Rate Range?]]></phrase>
+		<phrase key="booking_complete_booking" module="frontEnd"><![CDATA[Complete Booking]]></phrase>
+		<phrase key="booking_step2" module="frontEnd"><![CDATA[Booking Step 2]]></phrase>
+		<phrase key="booking_finish_step" module="frontEnd"><![CDATA[Finish!]]></phrase>
+		<phrase key="booking_finish_info" module="frontEnd"><![CDATA[Thank you!<br />Your booking request has been accepted.<br />Listing owner will review yoru request and will get back to you soon.<br />Please wait.]]></phrase>
+		<phrase key="booking_req_status" module="common"><![CDATA[Status]]></phrase>
+		<phrase key="booking_accept" module="frontEnd"><![CDATA[Accept]]></phrase>
+		<phrase key="booking_refuse" module="frontEnd"><![CDATA[Reject]]></phrase>
+		<phrase key="booking_accepted" module="common"><![CDATA[Accepted]]></phrase>
+		<phrase key="booking_refused" module="common"><![CDATA[Rejected]]></phrase>
+		<phrase key="booking_processed" module="common"><![CDATA[Processed]]></phrase>
+		<phrase key="booking_req_accepted" module="frontEnd"><![CDATA[Request has been successfully accepted.]]></phrase>
+		<phrase key="booking_req_refused" module="frontEnd"><![CDATA[Request has been rejected.]]></phrase>
+		<phrase key="booking_booking_tab" module="frontEnd"><![CDATA[Booking]]></phrase>
+		<phrase key="booking_tab_caption" module="frontEnd"><![CDATA[Booking]]></phrase>
+		<phrase key="booking_already_booked" module="frontEnd"><![CDATA[This range already booked or closed, please select other range.]]></phrase>
+		<phrase key="booking_new_requests" module="frontEnd"><![CDATA[You have [count] new requests]]></phrase>
+		<phrase key="booking_no_requests" module="frontEnd"><![CDATA[There are not booking request yet.]]></phrase>
+		<phrase key="booking_deny_guests" module="frontEnd"><![CDATA[Access for guest deny. Please login.]]></phrase>
+		<phrase key="booking_min_booking" module="frontEnd"><![CDATA[Minimum [min] days per booking]]></phrase>
+		<phrase key="booking_max_booking" module="frontEnd"><![CDATA[Maximum [max] days per booking]]></phrase>
+		<phrase key="booking_legend" module="frontEnd"><![CDATA[Legend]]></phrase>
+		<phrase key="booking_legend_available" module="frontEnd"><![CDATA[Available]]></phrase>
+		<phrase key="booking_legend_selected" module="frontEnd"><![CDATA[Selected]]></phrase>
+		<phrase key="booking_legend_checkin" module="common"><![CDATA[Check-in]]></phrase>
+		<phrase key="booking_legend_checkout" module="common"><![CDATA[Check-out]]></phrase>
+		<phrase key="booking_legend_booked" module="frontEnd"><![CDATA[Booked]]></phrase>
+		<phrase key="booking_legend_precheckin" module="frontEnd"><![CDATA[Arrival appr]]></phrase>
+		<phrase key="booking_legend_precheckout" module="frontEnd"><![CDATA[Set-off appr]]></phrase>
+		<phrase key="booking_legend_prebooked" module="frontEnd"><![CDATA[On approval]]></phrase>
+		<phrase key="booking_legend_arrived" module="frontEnd"><![CDATA[Arrival appr]]></phrase>
+		<phrase key="booking_legend_departure" module="frontEnd"><![CDATA[Set-off appr]]></phrase>
+		<phrase key="booking_rate_price_per_day" module="common"><![CDATA[Regular price per day]]></phrase>
+		<phrase key="booking_rate_add" module="common"><![CDATA[Add Rate]]></phrase>
+		<phrase key="booking_rate_range" module="common"><![CDATA[Rate Range]]></phrase>
+		<phrase key="booking_rate_range_added" module="common"><![CDATA[New Rate Range has been added.]]></phrase>
+		<phrase key="booking_request_send" module="frontEnd"><![CDATA[You request has been successfully sent.]]></phrase>
+		<phrase key="booking_request_ansfer_area" module="frontEnd"><![CDATA[You comment for client.]]></phrase>
+		<phrase key="booking_prev" module="frontEnd"><![CDATA[Prev:]]></phrase>
+		<phrase key="booking_next" module="frontEnd"><![CDATA[Next:]]></phrase>
+		<phrase key="booking_year" module="frontEnd"><![CDATA[Year]]></phrase>
+		<phrase key="booking_month" module="frontEnd"><![CDATA[Month]]></phrase>
+		<phrase key="booking_colors" module="admin"><![CDATA[Colors]]></phrase>
+		<phrase key="booking_additionals" module="admin"><![CDATA[Additionals]]></phrase>
+		<phrase key="booking_fields" module="admin"><![CDATA[Fields]]></phrase>
+		<phrase key="booking_fields_list" module="admin"><![CDATA[Fields List]]></phrase>
+		<phrase key="booking_requests" module="admin"><![CDATA[Requests]]></phrase>
+		<phrase key="booking_fields_manager" module="ext"><![CDATA[Booking Fields Manager]]></phrase>
+		<phrase key="booking_start_booking_title" module="frontEnd"><![CDATA[Click to start booking]]></phrase>
+		<phrase key="booking_month_january" module="frontEnd"><![CDATA[January]]></phrase>
+		<phrase key="booking_month_february" module="frontEnd"><![CDATA[February]]></phrase>
+		<phrase key="booking_month_march" module="frontEnd"><![CDATA[March]]></phrase>
+		<phrase key="booking_month_april" module="frontEnd"><![CDATA[April]]></phrase>
+		<phrase key="booking_month_may" module="frontEnd"><![CDATA[May]]></phrase>
+		<phrase key="booking_month_june" module="frontEnd"><![CDATA[June]]></phrase>
+		<phrase key="booking_month_july" module="frontEnd"><![CDATA[July]]></phrase>
+		<phrase key="booking_month_august" module="frontEnd"><![CDATA[August]]></phrase>
+		<phrase key="booking_month_september" module="frontEnd"><![CDATA[September]]></phrase>
+		<phrase key="booking_month_october" module="frontEnd"><![CDATA[October]]></phrase>
+		<phrase key="booking_month_november" module="frontEnd"><![CDATA[November]]></phrase>
+		<phrase key="booking_month_december" module="frontEnd"><![CDATA[December]]></phrase>
+		<phrase key="booking_monday" module="common"><![CDATA[Mon]]></phrase>
+		<phrase key="booking_tuesday" module="common"><![CDATA[Tue]]></phrase>
+		<phrase key="booking_wednesday" module="common"><![CDATA[Wed]]></phrase>
+		<phrase key="booking_thursday" module="common"><![CDATA[Thu]]></phrase>
+		<phrase key="booking_friday" module="common"><![CDATA[Fri]]></phrase>
+		<phrase key="booking_saturday" module="common"><![CDATA[Sat]]></phrase>
+		<phrase key="booking_sunday" module="common"><![CDATA[Sun]]></phrase>
+		<phrase key="booking_bindings_saved" module="common"><![CDATA[The Binding Days were successfully saved.]]></phrase>
+		<phrase key="booking_additionals_saved" module="admin"><![CDATA[The Additionals were successfully saved.]]></phrase>
+		<phrase key="booking_details" module="frontEnd"><![CDATA[Your booking details]]></phrase>
+		<phrase key="booking_page_details" module="common"><![CDATA[Booking Details]]></phrase>
+		<phrase key="booking_reviewed" module="frontEnd"><![CDATA[Reviewed]]></phrase>
+		<phrase key="booking_author" module="frontEnd"><![CDATA[Author]]></phrase>
+		<phrase key="booking_amount" module="common"><![CDATA[Amount]]></phrase>
+		<phrase key="booking_nights" module="frontEnd"><![CDATA[Nights]]></phrase>
+		<phrase key="booking_close_days" module="common"><![CDATA[Close Days]]></phrase>
+		<phrase key="booking_day_closed" module="frontEnd"><![CDATA[This day closed from booking. Please select other day.]]></phrase>
+		<phrase key="booking_day_booked" module="frontEnd"><![CDATA[This day already booked. Please select other day.]]></phrase>
+		<phrase key="booking_client_details" module="common"><![CDATA[Client Details]]></phrase>
+		<phrase key="booking_not_set" module="common"><![CDATA[Not set]]></phrase>
+		<phrase key="booking_booking_requests" module="frontEnd"><![CDATA[Booking Requests]]></phrase>
+		<phrase key="booking_check_in_only" module="frontEnd"><![CDATA[Check-in is available in <b>[days]</b> only.]]></phrase>
+		<phrase key="booking_check_out_only" module="frontEnd"><![CDATA[Check-out is available in <b>[days]</b> only.]]></phrase>
+		<phrase key="booking_ref_number" module="common"><![CDATA[Ref #]]></phrase>
+		<phrase key="booking_no_description" module="common"><![CDATA[No description]]></phrase>
+		<phrase key="ext_booking_listing_id" module="ext"><![CDATA[Listing ID]]></phrase>
+		<phrase key="ext_booking_listing_title" module="ext"><![CDATA[Listing Title]]></phrase>
+		<phrase key="ext_booking_client" module="ext"><![CDATA[Client]]></phrase>
+		<phrase key="ext_booking_checkin" module="ext"><![CDATA[Check-in]]></phrase>
+		<phrase key="ext_booking_checkout" module="ext"><![CDATA[Check-out]]></phrase>
+		<phrase key="ext_booking_process" module="ext"><![CDATA[New]]></phrase>
+		<phrase key="ext_booking_booked" module="ext"><![CDATA[Accepted]]></phrase>
+		<phrase key="ext_booking_refused" module="ext"><![CDATA[Rejected]]></phrase>
+		<phrase key="ext_listing_rate_range_manager" module="admin"><![CDATA[Available listings for booking]]></phrase>
+		<phrase key="ext_booking_remove_notice_ap" module="ext"><![CDATA[Are you sure you wont to remove selected request and booking details related to it?]]></phrase>
+		<phrase key="ext_booking_remove_notice" module="common"><![CDATA[Are you sure you wont to remove selected request and booking details related to it?]]></phrase>
+		<phrase key="ext_booking_request_removed" module="common"><![CDATA[Selected Booking Request has been successfully removed.]]></phrase>
+		<phrase key="booking_rate_range_removed" module="common"><![CDATA[Rate range has been successfully removed.]]></phrase>
+		<phrase key="booking_start_booking" module="common"><![CDATA[Click on necessary check in date and then on check out date to start the booking.]]></phrase>
+		<phrase key="booking_binding_days" module="common"><![CDATA[Binding Days]]></phrase>
+		<phrase key="booking_admin_ranges" module="common"><![CDATA[Ranges]]></phrase>
+		<phrase key="booking_desc" module="common"><![CDATA[Desc]]></phrase>
+		<phrase key="ext_ref_number" module="ext"><![CDATA[Ref #]]></phrase>
+		<phrase key="ext_booking_rate_ranges" module="ext"><![CDATA[Rate Ranges]]></phrase>
+		<phrase key="ext_booking_binding_days" module="ext"><![CDATA[Binding Days]]></phrase>
+		<phrase key="booking_error_fields_empty" module="common"><![CDATA[Fill in the required fields]]></phrase>
+		<phrase key="booking_edit_desc_notify" module="common"><![CDATA[The description was successfully edited]]></phrase>
+		<phrase key="booking_admin_additional_options" module="admin"><![CDATA[Additional options]]></phrase>
+		<phrase key="booking_admin_listings_tab" module="admin"><![CDATA[Listings]]></phrase>
+		<phrase key="booking_admin_show_on_plans" module="admin"><![CDATA[Show on plans]]></phrase>
+		<phrase key="booking_admin_show_on_plans_empty" module="admin"><![CDATA[Active plans not found]]></phrase>
+		<phrase key="booking_admin_price_field_devide" module="admin"><![CDATA[Anchor price field and divide]]></phrase>
+		<phrase key="booking_admin_price_field_devide_price" module="admin"><![CDATA[Price field]]></phrase>
+		<phrase key="booking_admin_rent_time_frame" module="admin"><![CDATA[Rent time frame]]></phrase>
+		<phrase key="booking_admin_rent_time_frame_per_day" module="admin"><![CDATA[Per day]]></phrase>
+		<phrase key="booking_admin_rent_time_frame_per_week" module="admin"><![CDATA[Per week]]></phrase>
+		<phrase key="booking_admin_rent_time_frame_per_month" module="admin"><![CDATA[Per month]]></phrase>
+		<phrase key="booking_admin_rent_time_frame_per_year" module="admin"><![CDATA[Per year]]></phrase>
+		<phrase key="booking_admin_colors_day_select" module="admin"><![CDATA[Day select]]></phrase>
+		<phrase key="booking_admin_colors_available" module="admin"><![CDATA[Available]]></phrase>
+		<phrase key="booking_admin_colors_booked" module="admin"><![CDATA[Booked]]></phrase>
+		<phrase key="booking_admin_colors_requested" module="admin"><![CDATA[Requested]]></phrase>
+		<phrase key="booking_admin_colors_closed" module="admin"><![CDATA[Closed]]></phrase>
+
+		<phrase version="2.0.1" key="booking_module" module="admin"><![CDATA[Booking Tab]]></phrase>
+		<phrase version="2.0.1" key="booking_fields+name+first_name" module="common"><![CDATA[First name]]></phrase>
+		<phrase version="2.0.1" key="booking_fields+name+last_name" module="common"><![CDATA[Last name]]></phrase>
+		<phrase version="2.0.1" key="booking_fields+name+email" module="common"><![CDATA[Mail]]></phrase>
+		<phrase version="2.0.1" key="listing_fields+name+check_availability" module="common"><![CDATA[Check Availability]]></phrase>
+		<phrase version="2.0.1" key="listing_fields+name+booking_module" module="common"><![CDATA[Booking Tab]]></phrase>
+		<phrase version="2.0.1" key="listing_groups+name+booking_rates" module="common"><![CDATA[Booking]]></phrase>
+
+		<phrase version="2.0.2" key="booking_addEditListingErrorEmptyRanges" module="common"><![CDATA[Fill out a Rate Ranges]]></phrase>
+	</phrases>
+
+	<configs key="booking" name="Booking system">
+		<![CDATA[]]>
+		<config key="booking_calendar_divider" name="Front End Calendar" description="" values="" type="divider" validate=""><![CDATA[]]></config>
+		<config key="booking_deny_guest" name="Deny booking to guests" description="" values="" type="bool" validate=""><![CDATA[0]]></config>
+		<config key="booking_calendar_horizontal" name="Count calendar horizontal" description="" values="" type="text" validate="int"><![CDATA[3]]></config>
+		<config key="booking_calendar_vertical" name="Count calendar vertical" description="" values="" type="text" validate="int"><![CDATA[2]]></config>
+		<config key="booking_min_book_day" name="Minimum days per booking" description="0 unlimited" values="" type="text" validate="int"><![CDATA[3]]></config>
+		<config key="booking_max_book_day" name="Maximum days per booking" description="0 unlimited" values="" type="text" validate="int"><![CDATA[0]]></config>
+		<config key="booking_additionals" name="Additionals" description="" values="" type="divider" validate=""><![CDATA[]]></config>
+		<config key="booking_binding_plans" name="Binding to the plans" description="" values="" type="bool" validate=""><![CDATA[0]]></config>
+		<config key="booking_calendar_restricted" name="Calendar restricted" description="Calendar restricted on the listing plan." values="" type="bool" validate=""><![CDATA[0]]></config>
+		<config key="booking_bind_checkin_checkout" name="Binding Check-in / Check-out" description="" values="" type="bool" validate=""><![CDATA[0]]></config>
+		<config key="booking_notify_email" name="Notify owners by email" description="" values="" type="bool" validate=""><![CDATA[1]]></config>
+		<config key="booking_fixed_range" name="Fixed rate range" description="" values="" type="bool" validate=""><![CDATA[0]]></config>
+		<config key="booking_notify_admin_by_email" name="Send notification e-mail to Admin about booking requests." description="" values="" type="bool" validate=""><![CDATA[1]]></config>
+	</configs>
+
+	<updates>
+		<update version="2.0.1" files="admin/booking.inc.php,js/booking.js,rlBooking.class.php"><![CDATA[]]><update>
+		<update version="2.0.2" files="rlBooking.class.php,listing_rate_ranges.tpl,availability_block.tpl"><![CDATA[]]><update>
+	</updates>
+
+	<uninstall>
+		<![CDATA[
+			$GLOBALS['reefless'] -> loadClass('Booking', false, 'booking');
+			$GLOBALS['rlBooking'] -> uninstall();
+		]]>
+	</uninstall>
+
+</plugin>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="PdfExport">
+	<title>PDF Export</title>
+	<description>Listing PDF Export plugin</description>
+	<author>Kevin Fly</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>2.0.6</version>
+	<date>20.01.2012</date>
+
+	<files>
+		<file>PdfExport_icon.tpl</file>
+		<file>pdf.png</file>
+		<file>PdfExport.inc.php</file>
+		<file>tcpdf/tcpdf.php</file>
+	</files>
+
+	<hooks>
+		<hook name="listingDetailsAfterStats"><![CDATA[
+			global $page_info;
+			if ( $page_info['Controller'] == 'listing_details' )
+			{
+				$GLOBALS['rlSmarty'] -> display(RL_ROOT . 'plugins/PdfExport/PdfExport_icon.tpl');
+			}
+		]]></hook>
+	</hooks>
+
+	<phrases>
+		<phrase key="title_pdf_export" module="common"><![CDATA[Save as PDF]]></phrase>
+	</phrases>
+	
+	<pages>
+		<page key="PdfExport" name="PDF Export" type="system" path="pdf-export" login="0" controller="PdfExport" tpl="1"><![CDATA[]]></page>
+	</pages>
+</plugin>

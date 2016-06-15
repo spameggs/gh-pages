@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="compare">
+	<title>Compare listings</title>
+	<description>Compare listings plugin</description>
+	<author>John Freeman</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>2.1.0</version>
+	<date>13.5.2013</date>
+	<files>
+		<file>block.tpl</file>
+		<file>compare.inc.php</file>
+		<file>compare.tpl</file>
+		<file>icon.tpl</file>
+		<file>rlCompare.class.php</file>
+		<file>tab.tpl</file>
+		<file>static/gallery.png</file>
+		<file>static/lib.js</file>
+		<file>static/rtl.css</file>
+		<file>static/style.css</file>
+	</files>
+	<install><![CDATA[
+	global $rlDb;
+	$sql = "
+	CREATE TABLE `".RL_DBPREFIX."compare_table` (
+		`ID` int(10) NOT NULL AUTO_INCREMENT,
+		`Name` varchar(100) CHARACTER SET utf8 NOT NULL DEFAULT '',
+		`Path` varchar(100) CHARACTER SET utf8 NOT NULL DEFAULT '',
+		`Account_ID` int(8) NOT NULL DEFAULT '0',
+		`IDs` mediumtext NOT NULL,
+		`Type` enum('public','private') NOT NULL DEFAULT 'private',
+		`Date` datetime NOT NULL,
+		PRIMARY KEY (`ID`),
+		KEY `Account_ID` (`Account_ID`)
+	) DEFAULT CHARSET=utf8 ;";
+	$rlDb -> query($sql);
+	$page_id = $rlDb -> getOne('ID', "`Key` = 'compare_listings'", 'pages');
+	$sql = "UPDATE `".RL_DBPREFIX."blocks` SET `Position` = '2', `Page_ID` = '{$page_id}', `Sticky` = '0' WHERE `Key` = 'compare_results' LIMIT 1";
+	$rlDb -> query($sql);
+	]]></install>
+	<hooks>
+		<hook version="2.0.1" name="tplHeader"><![CDATA[
+			global $config;
+			if ( $config['compare_module'] && !defined('RL_MOBILE') )
+			{
+				echo '<link href="'. RL_PLUGINS_URL .'compare/static/style.css" type="text/css" rel="stylesheet" />';
+				if ( RL_LANG_DIR == 'rtl' )
+				{
+					echo '<link href="'. RL_PLUGINS_URL .'compare/static/rtl.css" type="text/css" rel="stylesheet" />';
+				}
+				echo '<style type="text/css">';
+				switch ($config['template']){
+					case 'auto_modern':
+						echo "
+							table.compare td.fields-column td.item { border-color: #939393; }
+							table.compare td.fields-column td.hover { background-color: #939393; }
+							table.compare td.fields-content td.item { border-color: #939393; }
+							table.compare td.fields-content td.hover { background-color: #bcbcbc; }
+							div.highlight_dark { background-color: #787878; }
+						";
+						break;
+					case 'boats_modern':
+						echo "
+							table.compare td.fields-column td.item { border-color: #59859d; }
+							table.compare td.fields-column td.hover { background-color: #59859d; }
+							table.compare td.fields-content td.item { border-color: #59859d; }
+							table.compare td.fields-content td.hover { background-color: #92aab7; }
+							div.highlight_dark { background-color: #356D9B; }
+						";
+						break;
+					case 'boats_seaman':
+						echo "
+							table.compare td.fields-column td.item { border-color: #858db1; }
+							table.compare td.fields-column td.hover { background-color: #858db1; }
+							table.compare td.fields-content td.item { border-color: #858db1; }
+							table.compare td.fields-content td.hover { background-color: #e4e6f0; }
+						";
+						break;
+					case 'general_modern':
+						echo "
+							table.compare td.fields-column td.item { border-color: #5d84a1; }
+							table.compare td.fields-column td.hover { background-color: #5d84a1; }
+							table.compare td.fields-content td.item { border-color: #5d84a1; }
+							table.compare td.fields-content td.hover { background-color: #d6e1ea; }
+							div.highlight_dark { background-color: #5A8EB7; }
+						";
+						break;
+					case 'general_sky':
+						echo "
+							table.compare td.fields-column td.item { border-color: #92b3c3; }
+							table.compare td.fields-column td.hover { background-color: #92b3c3; }
+							table.compare td.fields-content td.item { border-color: #92b3c3; }
+							table.compare td.fields-content td.hover { background-color: #e0eaef; }
+						";
+						break;
+					case 'pets_modern':
+						echo "
+							table.compare td.fields-column td.item { border-color: #a4998a; }
+							table.compare td.fields-column td.hover { background-color: #a4998a; }
+							table.compare td.fields-content td.item { border-color: #a4998a; }
+							table.compare td.fields-content td.hover { background-color: #c5bcaf; }
+						";
+						break;	
+					case 'realty_modern':
+						echo "
+							table.compare td.fields-column td.item { border-color: #8d7e56; }
+							table.compare td.fields-column td.hover { background-color: #8d7e56; }
+							table.compare td.fields-content td.item { border-color: #8d7e56; }
+							table.compare td.fields-content td.hover { background-color: #cdc3aa; }
+							div.highlight_dark { background-color: #B2A680; }
+						";
+						break;	
+					case 'realty_quiet_day':
+						echo "
+							table.compare td.fields-column td.item { border-color: #9badcb; }
+							table.compare td.fields-column td.hover { background-color: #9badcb; }
+							table.compare td.fields-content td.item { border-color: #9badcb; }
+							table.compare td.fields-content td.hover { background-color: #e2e8f1; }
+						";
+						break;
+					case 'realty_spring':
+						echo "
+							table.compare td.fields-column td.item { border-color: #93a153; }
+							table.compare td.fields-column td.hover { background-color: #93a153; }
+							table.compare td.fields-content td.item { border-color: #93a153; }
+							table.compare td.fields-content td.hover { background-color: #dae3b5; }
+							a.button { text-decoration: none!important; color: white!important; }
+						";
+						break;
+				}
+				echo '</style>';
+			}
+		]]></hook>
+		<hook version="2.0.1" name="boot"><![CDATA[
+			global $reefless, $config;
+			if ( !$config['compare_module'] || defined('RL_MOBILE') )
+				return;
+			
+			if ( $_GET['request'] == 'compareList' && $_GET['ids'] )
+			{
+				$reefless -> loadClass('Compare', false, 'compare');
+				$GLOBALS['rlCompare'] -> load($_GET['ids']);
+				exit;
+			}
+		]]></hook>
+		<hook version="2.0.1" name="tplFooter"><![CDATA[
+			global $config, $rlSmarty;
+			if ( $config['compare_module'] && !defined('RL_MOBILE') )
+			{
+				$rlSmarty -> display(RL_ROOT . 'plugins' . RL_DS . 'compare' . RL_DS . 'tab.tpl');
+			}
+		]]></hoot>
+		<hook version="2.0.1" name="listingNavIcons"><![CDATA[
+			global $lang, $rlSmarty, $config;
+			
+			if ( !$config['compare_module'] || defined('RL_MOBILE') )
+				return;
+				
+			$listing_id = $rlSmarty -> get_template_vars('listing');
+			echo '<a id="compare_icon_'. $listing_id['ID']. '" accesskey="'. $listing_id['ID']. '" href="javascript:void(0)" title="'. $lang['compare_add_to_compare'] .'" class="icon add_to_compare"><span>&nbsp;</span></a>';
+		]]></hoot>
+		<hook version="2.1.0" name="listingDetailsAfterStats"><![CDATA[
+			global $config, $rlSmarty;
+			if ( $config['compare_module'] && !defined('RL_MOBILE') )
+			{
+				$rlSmarty -> display(RL_ROOT . 'plugins' . RL_DS . 'compare' . RL_DS . 'icon.tpl');
+			}
+		]]></hoot>
+		<hook version="2.0.6" name="ajaxRecentlyAddedLoadPost"><![CDATA[
+			global $_response;
+			$_response -> script("
+				$('a.add_to_compare, a.remove_from_compare').unbind('click').click(function(){
+					flCompare.action(this);
+				});
+			");
+		]]></hoot>
+	</hooks>
+	<configs key="compare" name="Compare Listings">
+		<![CDATA[]]>
+		<config key="compare_common" name="Common" type="divider"><![CDATA[]]></config>
+		<config key="compare_module" name="Compare listings module" type="bool"><![CDATA[1]]></config>
+	</configs>
+	<pages>
+		<page key="compare_listings" name="Comparison Table" type="system" path="comparision-tables" controller="compare" menus="2" tpl="1"><![CDATA[]]></page>
+	</pages>
+	<blocks>
+		<block key="compare_results" name="Comparison results" side="left" type="smarty" tpl="1"><![CDATA[
+			{include file=$smarty.const.RL_PLUGINS|cat:'compare'|cat:$smarty.const.RL_DS|cat:'block.tpl'}
+		]]></block>
+	</blocks>
+	<phrases>
+		<phrase key="compare_add_to_compare" module="common"><![CDATA[Add to compare list]]></phrase>
+		<phrase key="compare_comparison_table" module="common"><![CDATA[Comparison Table]]></phrase>
+		<phrase key="compare_compare" module="common"><![CDATA[Compare]]></phrase>
+		<phrase key="compare_remove_from_compare" module="common"><![CDATA[Remove from compare list]]></phrase>
+		<phrase key="compare_listings_to_be_compare" module="common"><![CDATA[Listings to be compared]]></phrase>
+		<phrase key="compare_no_listings_to_compare" module="frontEnd"><![CDATA[There are no listings to compare]]></phrase>
+		<phrase key="compare_save_results" module="frontEnd"><![CDATA[Save the results]]></phrase>
+		<phrase key="compare_picture" module="frontEnd"><![CDATA[Picture]]></phrase>
+		<phrase key="compare_title" module="frontEnd"><![CDATA[Title]]></phrase>
+		<phrase key="compare_save_as" module="frontEnd"><![CDATA[Save as]]></phrase>
+		<phrase key="compare_public" module="frontEnd"><![CDATA[Public]]></phrase>
+		<phrase key="compare_private" module="frontEnd"><![CDATA[Private]]></phrase>
+		<phrase key="compare_remove_notice" module="frontEnd"><![CDATA[Are you sure you want to remove this listing from comparison table?]]></phrase>
+		<phrase key="compare_fullscreen" module="frontEnd"><![CDATA[Fullscreen]]></phrase>
+		<phrase key="compare_default_view" module="frontEnd"><![CDATA[Default view]]></phrase>
+		<phrase key="compare_save_table_login_notice" module="frontEnd"><![CDATA[You should have an account and be logged in to save the results table.]]></phrase>
+		<phrase key="compare_save_completed_notice" module="frontEnd"><![CDATA[You comparison results has been successfully saved as <b>{name}</b>.]]></phrase>
+		<phrase key="compare_table_not_found" module="frontEnd"><![CDATA[Requested comparison table not found]]></phrase>
+		<phrase key="compare_table_private_only" module="frontEnd"><![CDATA[You haven't permissions to view private comparison table]]></phrase>
+		<phrase key="compare_my_tables" module="frontEnd"><![CDATA[My Tables]]></phrase>
+		<phrase version="2.1.0" key="compare_delete_table_notice" module="frontEnd"><![CDATA[Are you sure you want to remove selected table?]]></phrase>
+		<phrase version="2.1.0" key="compare_table_removed" module="frontEnd"><![CDATA[The selected table has been successfully removed.]]></phrase>
+	</phrases>
+	<uninstall>
+		<![CDATA[global $rlDb;
+				$sql = "DROP TABLE `".RL_DBPREFIX."compare_table`";
+				$rlDb -> query($sql);]]>
+	</uninstall>
+</plugin>

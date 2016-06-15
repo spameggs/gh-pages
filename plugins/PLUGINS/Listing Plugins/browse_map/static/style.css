@@ -1,0 +1,79 @@
+/* search by distance css */
+
+div#listings span.sbd-target
+{
+	background: url("target.png") 0 2px no-repeat;
+	padding: 0 2px 0 19px;
+}
+div.sbd_label
+{
+	white-space: nowrap;
+	z-index: 100000;
+	position: absolute;
+	padding: 2px 5px;
+	line-height: 14px;
+	width: auto;
+	background: #c17111;
+	border: 1px #9c5100 solid;
+	border-radius: 2px;
+	color: white;
+	font-size: 11px;
+	font-family: Trebuchet MS;
+}
+
+a.sbd_control
+{
+	margin: 0 5px;
+}
+a.sbd_control span
+{
+	padding-top: 3px!important;
+	padding-bottom: 3px!important;
+	cursor: pointer;
+}
+table.sbd_baloon td.thumbnail
+{
+	vertical-align: top;
+}
+table.sbd_baloon td.thumbnail img
+{
+	width: 90px;
+	border: 1px white solid;
+	border-radius: 3px;
+}
+table.sbd_baloon td.thumbnail div
+{
+	border: 1px #cccccc solid;
+	border-radius: 3px;
+	display: inline-block;
+}
+table.sbd_baloon table.table
+{
+	width: auto!important;
+	table-layout: fixed;
+}
+table.sbd_baloon table.table td.name
+{
+	padding: 0 5px 2px; 
+	width: 90px;
+}
+table.sbd_baloon table.table td.name>div
+{
+	width: 90px;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
+}
+table.sbd_baloon table.table td.value
+{
+	padding: 0 0 2px; 
+}
+.sbd_title
+{
+	padding: 0 5px 5px;
+}
+.sbd_title a
+{
+	font-weight: bold;
+}
+/* search by distance css end */

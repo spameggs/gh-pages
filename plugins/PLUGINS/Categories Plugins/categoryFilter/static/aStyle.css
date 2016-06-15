@@ -1,0 +1,79 @@
+/* category filter admin styles */
+
+.categoryFilterFieldType
+{
+	display: inline-block;
+	*display: inline;
+	*zoom: 1;
+	width: 165px;
+}
+.categoryFilterFieldConfig
+{
+	width: 16px;
+	height: 16px;
+	display: inline-block;
+	*display: inline;
+	*zoom: 1;
+	background: url('gallery.png') 0 0 no-repeat;
+	position: absolute;
+	margin-top: -8px;
+	cursor: pointer!important;
+}
+div#form_section div.field_obj a.suspended
+{
+	display: none;
+}
+#fields_section a.categoryFilterFieldConfig
+{
+	display: none;
+}
+div.cf-nav
+{
+	display: inline-block;
+	*display: inline;
+	*zoom: 1;
+	width: 150px;
+}
+div.cf-nav input
+{
+	-moz-user-select: normal;
+	-khtml-user-select: normal;
+}
+div.cf-names
+{
+	display: inline-block;
+	*display: inline;
+	*zoom: 1;
+}
+#append_items span.between,
+#append_items span.less,
+#append_items span.greater
+{
+	margin: 0 6px;
+	display: inline-block;
+	*display: inline;
+	*zoom: 1;
+	width: 22px;
+	height: 16px;
+	background: url('gallery.png') 0 -19px no-repeat;
+	vertical-align: middle;
+	cursor: pointer;
+}
+#append_items span.less
+{
+	background-position: 0 -34px;
+}
+#append_items span.greater
+{
+	background-position: 0 -49px;
+}
+#append_items > div
+{
+	margin-bottom: 3px;
+}
+#append_items div.tab_area
+{
+	padding-right: 15px;
+}
+
+/* category filter admin styles end */

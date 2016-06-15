@@ -1,0 +1,17 @@
+div.inner ul.box_grid
+{
+	text-align: right;
+}
+ul.box_grid li.item
+{
+	text-align: right;
+}
+ul.box_grid li.item div.content .photo
+{
+	float: right;
+}
+ul.box_grid li.item div.content .photo div.sale-rent
+{
+    bottom: -1px;
+    right: -2px;
+}

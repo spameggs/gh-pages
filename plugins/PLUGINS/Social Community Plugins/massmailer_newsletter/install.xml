@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="massmailer_newsletter">
+	<title>Massmailer/Newsletter</title>
+	<description>Massmailer / Newsletter plugin allows you to reach your users easily</description>
+	<author>John Freeman</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>2.1.0</version>
+	<date>10.04.2012</date>
+	<controller>massmailer_newsletter</controller>
+	<files>
+		<file>block.tpl</file>
+		<file>unsubscribe.inc.php</file>
+		<file>unsubscribe.tpl</file>
+		<file>rlMassmailerNewsletter.class.php</file>	
+		<file>admin/massmailer_newsletter.tpl</file>
+		<file>admin/massmailer_newsletter.inc.php</file>
+		<file>admin/send_interface.tpl</file>
+		<file>admin/send.php</file>
+		<file>static/gallery.png</file>
+		<file>static/lib.js</file>
+		<file>static/aStyle.css</file>
+		<file>static/gallery.png</file>
+	</files>
+	<install><![CDATA[
+	global $rlDb;
+	$sql = "
+	CREATE TABLE `".RL_DBPREFIX."subscribers` (
+	`ID` int(11) NOT NULL auto_increment,
+	`Name` varchar(255) CHARACTER SET utf8 NOT NULL default '',
+	`Mail` varchar(255) NOT NULL default '',
+	`Date` date NOT NULL default '0000-00-00',
+	`Status` enum('active','approval') NOT NULL default 'active',
+	PRIMARY KEY  (`ID`),
+	KEY `Status` (`Status`)
+	) DEFAULT CHARSET=utf8";
+	$rlDb -> query( $sql );
+	$sql = "
+	CREATE TABLE `".RL_DBPREFIX."massmailer` (
+	`ID` int(11) NOT NULL auto_increment,
+	`Key` varchar(255) NOT NULL default '',
+	`From` varchar(255) NOT NULL default '',
+	`Subject` mediumtext CHARACTER SET utf8 NOT NULL,
+	`Body` mediumtext CHARACTER SET utf8 NOT NULL,
+	`Recipients_newsletter` enum('1','0') NOT NULL default '0',
+	`Recipients_accounts` varchar(255) NOT NULL default '',
+	`Recipients_contact_us` enum('1','0') NOT NULL default '0',	
+	`Date` date NOT NULL default '0000-00-00',
+	`Status` enum('active','approval') NOT NULL default 'active',
+	PRIMARY KEY  (`ID`),
+	KEY `Status` (`Status`)
+	) DEFAULT CHARSET=utf8";
+
+	$rlDb -> query( $sql );
+	
+	$sql = "ALTER TABLE `".RL_DBPREFIX."accounts` ADD `Subscribe` ENUM( '0', '1' ) NOT NULL DEFAULT '1' AFTER `Mail_tmp`";
+	$rlDb -> query( $sql );
+	
+	$sql = "ALTER TABLE `".RL_DBPREFIX."accounts` ADD INDEX ( `Subscribe` )";
+	$rlDb -> query( $sql );
+	
+	$sql = "ALTER TABLE `".RL_DBPREFIX."contacts` ADD `Subscribe` ENUM( '0', '1' ) NOT NULL DEFAULT '1' AFTER `Email`";
+	$rlDb -> query( $sql );
+	
+	$sql = "ALTER TABLE `".RL_DBPREFIX."contacts` ADD INDEX ( `Subscribe` )";
+	$rlDb -> query( $sql );
+	]]>
+	</install>
+	<hooks>
+		<hook name="specialBlock">
+			<![CDATA[global $rlXajax, $block_keys;
+
+			if ( array_key_exists( 'massmailer_newsletter_block', $block_keys) )
+			{
+				$GLOBALS['reefless'] -> loadClass('MassmailerNewsletter', null, 'massmailer_newsletter');
+				$rlXajax -> registerFunction( array( 'subscribe', $GLOBALS['rlMassmailerNewsletter'], 'ajaxSubscribe' ) );
+			}
+			]]>
+		</hook>
+		<hook name="apTplHeader"><![CDATA[
+			global $controller;
+			
+			if ( $controller == 'massmailer_newsletter' )
+			{
+				echo '<link href="'. RL_PLUGINS_URL .'massmailer_newsletter/static/aStyle.css" type="text/css" rel="stylesheet" />';
+			}
+		]]></hook>
+		<hook version="2.1.0" name="tplFooter"><![CDATA[
+			global $rlSmarty, $page_info;
+				
+			if ( in_array($page_info['Key'], array('registration', 'my_profile')) )
+			{
+				$rlSmarty -> display( RL_PLUGINS . 'massmailer_newsletter' . RL_DS . 'footer.tpl' );
+			}
+		]]></hook>
+		<hook version="2.1.0" name="registerSuccess"><![CDATA[
+			global $rlDb;
+			
+			if ( !$_POST['profile']['mn_subscribe'] )
+			{
+				$max_id = $rlDb -> getRow("SELECT MAX(`ID`) AS `ID` FROM `". RL_DBPREFIX ."accounts`");
+				$account_id = $max_id['ID'];
+
+				$sql = "UPDATE `". RL_DBPREFIX ."accounts` SET `Subscribe` = '0' WHERE `ID` = '{$account_id}' LIMIT 1";
+				$rlDb -> query($sql);
+			}
+		]]></hook>
+		<hook version="2.1.0" name="profileEditProfileDone"><![CDATA[
+			global $rlDb, $account_info;
+			
+			$subscribe = (int)$_POST['profile']['mn_subscribe'];
+
+			$sql = "UPDATE `". RL_DBPREFIX ."accounts` SET `Subscribe` = '{$subscribe}' WHERE `ID` = '{$account_info['ID']}' LIMIT 1";
+			$rlDb -> query($sql);
+		]]></hook>
+		<hook version="2.1.0" name="profileController"><![CDATA[
+			global $profile_info;
+			
+			if ( !$_POST['fromPost_profile'] )
+			{
+				$_POST['profile']['mn_subscribe'] = $profile_info['Subscribe'];
+			}
+		]]></hook>
+	</hooks>
+	<phrases>
+		<phrase key="massmailer_newsletter_your_name" module="common"><![CDATA[Your Name]]></phrase>
+		<phrase key="massmailer_newsletter_newsletter" module="admin"><![CDATA[Subscriber accounts]]></phrase>
+		<phrase key="massmailer_newsletter_add_massmailer" module="admin"><![CDATA[Add a newsletter]]></phrase>
+		<phrase key="massmailer_newsletter_edit_massmailer" module="admin"><![CDATA[Edit massmailer]]></phrase>
+		<phrase key="massmailer_newsletter_recipients" module="admin"><![CDATA[Recipients]]></phrase>
+		<phrase key="massmailer_newsletter_site_accounts" module="admin"><![CDATA[Site accounts]]></phrase>
+		<phrase key="massmailer_newsletter_contact_us" module="admin"><![CDATA[Contact form user accounts]]></phrase>
+		<phrase key="massmailer_newsletter_comments" module="admin"><![CDATA[Comment posters]]></phrase>
+		<phrase key="massmailer_newsletter_subject" module="admin"><![CDATA[Subject]]></phrase>
+		<phrase key="massmailer_newsletter_from" module="admin"><![CDATA[From]]></phrase>
+		<phrase key="massmailer_newsletter_to" module="admin"><![CDATA[To]]></phrase>
+		<phrase key="massmailer_newsletter_total" module="admin"><![CDATA[Total emails]]></phrase>
+		<phrase key="massmailer_newsletter_sents" module="admin"><![CDATA[Sent emails]]></phrase>
+		<phrase key="massmailer_newsletter_sending" module="admin"><![CDATA[Sending]]></phrase>
+		<phrase key="massmailer_newsletter_completed" module="admin"><![CDATA[Completed]]></phrase>
+		<phrase key="massmailer_newsletter_processing" module="admin"><![CDATA[Processing]]></phrase>
+		<phrase key="massmailer_newsletter_your_e_mail" module="common"><![CDATA[Your email]]></phrase>
+		<phrase key="massmailer_newsletter_unsubscribe" module="common"><![CDATA[Unsubscribe]]></phrase>
+		<phrase key="massmailer_newsletter_subscribe" module="common"><![CDATA[Subscribe]]></phrase>
+		<phrase key="massmailer_newsletter_incorrect_email" module="common"><![CDATA[Please enter a valid email address.]]></phrase>
+		<phrase key="massmailer_newsletter_name_is_to_short" module="common"><![CDATA[The name you've entered is too short, please think of a longer one.]]></phrase>
+		<phrase key="massmailer_newsletter_subscribe_email_exist" module="common"><![CDATA[The email you've entered is already in use, please enter another email.]]></phrase>
+		<phrase key="massmailer_newsletter_subscription_completed" module="common"><![CDATA[Your e-mail address has been successfully saved<br /> <b>Thank you for subscribing to newsletters from {sitename}!</b>]]></phrase>
+		<phrase key="massmailer_newsletter_subscribe_email_not_exist" module="common"><![CDATA[The newsletter with <b>[email]</b> e-mail address was not found.]]></phrase>
+		<phrase key="ext_massmailer_newsletter_body" module="ext"><![CDATA[Body]]></phrase>
+		<phrase key="ext_newsletter_manager" module="ext"><![CDATA[Subscriber Accouts]]></phrase>
+		<phrase key="ext_massmailer_manager" module="ext"><![CDATA[Newsetters]]></phrase>
+		<phrase key="ext_subscribe_date" module="ext"><![CDATA[Subscribtion date]]></phrase>
+		<phrase key="massmailer_newsletter_send" module="admin"><![CDATA[Send]]></phrase>
+		<phrase key="massmailer_newsletter_send_and_save" module="admin"><![CDATA[Save and Send]]></phrase>
+		<phrase key="massmailer_newsletter_body" module="admin"><![CDATA[Body]]></phrase>
+		<phrase key="massmailer_newsletter_incorrect_request" module="common"><![CDATA[Your request has failed, please contact {sitename} Team to resolve the issue.]]></phrase>
+		<phrase key="massmailer_newsletter_person_unsubscibed" module="common"><![CDATA[You have been successfully unsubscribed from {sitename} newsletters.]]></phrase>
+		<phrase key="massmailer_newsletter_unsubscription_completed" module="common"><![CDATA[Your unsubscribtion request has been successfully accepted and a confirmation email with further instructions sent to you.]]></phrase>
+		<phrase key="ext_massmailer_send" module="ext"><![CDATA[Send]]></phrase>
+		<phrase key="massmailer_newsletter_added" module="admin"><![CDATA[Your template has been added successfully]]></phrase>
+		<phrase key="massmailer_newsletter_sent" module="admin"><![CDATA[Mass mailing has been completed]]></phrase>
+		<phrase key="massmailer_newsletter_send_confirm" module="admin"><![CDATA[Are you sure you want to start mass mailing?]]></phrase>
+		<phrase key="massmailer_newsletter_unsubscribe_text" module="common"><![CDATA[Click [here] to unsubscribe from newsletters.]]></phrase>
+		<phrase key="massmailer_newsletter_completed_notice" module="common"><![CDATA[Mass mailing completed.  <b>{count}</b> letter(s) sent]]></phrase>
+		<phrase version="2.1.0" key="massmailer_newsletter_subscribe_to" module="common"><![CDATA[Subscribe to newsletter]]></phrase>
+	</phrases>
+	<pages>
+		<page controller="unsubscribe" key="massmailer_newsletter_unsubscribe" name="Unsubscribe" type="system" path="unsubscribe" get="" menus="" tpl="1"><![CDATA[unsubscribe]]></page>
+	</pages>
+	<emails>
+		<email key="massmailer_unsubscribe" subject="Unsubscribe Request"><![CDATA[Dear {username},
+
+We have received an unsubscribe request from {site_url},
+If it were you who sent the request to unsubscribe from  
+{sitename} newsletters please follow the link below:
+{link}
+
+Please disregard the email if you wish to keep the subscription active.
+______________________________
+Thank you,
+{site_name} Administration]]></email>
+	</emails>
+	
+	<blocks>
+		<block key="massmailer_newsletter_block" login="0" name="Newsletter" side="left" type="smarty" tpl="1"><![CDATA[
+			{include file = $smarty.const.RL_PLUGINS|cat:'massmailer_newsletter'|cat:$smarty.const.RL_DS|cat:'block.tpl'}
+		]]></block>
+	</blocks>
+	
+	<updates>
+		<update version="2.0.1" files="rlMassmailerNewsletter.class.php,unsubscribe.inc.php"><![CDATA[]]></update>
+		<update version="2.1.0" files="footer.tpl"><![CDATA[]]></update>
+	</updates>
+	
+	<uninstall><![CDATA[
+		global $rlDb;
+		$sql = "DROP TABLE `".RL_DBPREFIX."massmailer`";
+		$rlDb -> query($sql);
+	
+		$sql = "DROP TABLE `".RL_DBPREFIX."subscribers`";
+		$rlDb -> query($sql);
+	
+		$sql = "ALTER TABLE `".RL_DBPREFIX."accounts` DROP `Subscribe`";
+		$rlDb -> query($sql);
+	
+		$sql = "ALTER TABLE `".RL_DBPREFIX."contacts` DROP `Subscribe`";
+		$rlDb -> query($sql);
+	]]>
+	</uninstall>
+</plugin>

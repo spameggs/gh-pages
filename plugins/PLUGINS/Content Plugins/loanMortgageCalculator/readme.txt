@@ -1,0 +1,3 @@
+Flynax Plugin Loan Calculator is the useful tool for users who plan their budgets and know the value of money. This Loan Calculator helps classifieds website users easily count all loan repayments they need to pay along with amortization expenditures on monthly or yearly basis.
+
+After installation of the Loan Calculator plugin it adds an additional tab to the details page of classifieds at your Flynax web site. It has a field with the filled price for a property or a car. Users only need to add a period of a loan and percent per annum, after it the system will count all loan repayments they need to pay. Plugin Loan Calculator can be used for Flynax Realty Classifieds Script and Flynax Auto Classifieds Script.

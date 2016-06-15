@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="comment">
+	<title>Comments</title>
+	<description>Listing Comments plugin</description>
+	<author>John Freeman</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>3.0.1</version>
+	<date>21.01.2012</date>
+	<controller>comment</controller>
+
+	<files>
+		<file>admin/comment.inc.php</file>
+		<file>admin/comment.tpl</file>
+		<file>comment.block.tpl</file>
+		<file>rlComment.class.php</file>	
+	</files>
+
+	<install><![CDATA[
+	global $rlDb;
+
+	$sql = "
+	CREATE TABLE `".RL_DBPREFIX."comments` (
+	`ID` int(4) NOT NULL auto_increment,
+	`User_ID` int(5) NOT NULL default '0',
+	`Listing_ID` int(7) NOT NULL default '0',
+	`Author` varchar(100) CHARACTER SET utf8 NOT NULL default '',
+	`User_IP` INT(11) UNSIGNED NOT NULL,
+	`Title` tinytext CHARACTER SET utf8 NOT NULL,
+	`Description` mediumtext CHARACTER SET utf8 NOT NULL,
+	`Rating` int(3) NOT NULL default '0',
+	`Date` datetime NOT NULL default '0000-00-00 00:00:00',
+	`Status` enum('active','pending','approval') NOT NULL default 'active',
+	KEY `ID` (`ID`)
+	) CHARSET=utf8";
+	
+	$rlDb -> query($sql);
+	
+	$sql = "ALTER TABLE `".RL_DBPREFIX."listings` ADD `comments_count` INT NOT NULL AFTER `Date`";
+	$rlDb -> query($sql);
+	]]></install>
+	
+	<hooks>
+		<hook name="boot">
+			<![CDATA[
+			global $block_keys, $reefless, $rlSmarty;
+
+			if ( array_key_exists( 'comments_block', $block_keys) )
+			{
+				$GLOBALS['reefless'] -> loadClass('Comment', null, 'comment');
+
+				$comments = $GLOBALS['rlComment'] -> selectCommentsInBlock();
+				$GLOBALS['rlSmarty'] -> assign_by_ref('block_comments', $comments);
+			}
+			]]>
+		</hook>
+		<hook name="listingAfterStats">
+			<![CDATA[$GLOBALS['rlSmarty'] -> display(RL_ROOT . 'plugins' . RL_DS . 'comment' . RL_DS . 'info_navigator.tpl');]]>
+		</hook>
+		<hook name="apPhpHome"><![CDATA[
+			global $reefless;
+			
+			$reefless -> loadClass('Comment', null, 'comment');
+			$GLOBALS['rlComment'] -> apStatistics();
+		]]></hook>
+		<hook name="listingDetailsBottomTpl">
+			<![CDATA[global $listing_id;
+					if ($GLOBALS['config']['comments_login_access'] && IS_LOGIN !== true)
+						return;
+					
+					$GLOBALS['reefless'] -> loadClass('Comment', null ,'comment');
+					$GLOBALS['rlComment'] -> getComments($listing_id);
+			]]>
+		</hook>
+		<hook name="listingDetailsBottom"><![CDATA[
+			global $rlXajax, $tabs, $lang, $config, $reefless;
+			
+			if ( $config['comments_login_access'] && IS_LOGIN !== true )
+				return;
+			
+			$tabs['comments'] = array(
+				'key' => 'comments',
+				'name' => $lang['comment_tab']
+			);
+			
+			$reefless -> loadClass('Comment', null, 'comment');
+			$rlXajax -> registerFunction( array( 'CommentAdd', $GLOBALS['rlComment'], 'ajaxCommentAdd' ) );
+		]]></hook>
+		<hook name="tplHeader">
+			<![CDATA[echo '<link href="'.RL_PLUGINS_URL.'comment/static/style.css" type="text/css" rel="stylesheet" />';]]>
+		</hook>
+	</hooks>
+	<phrases>
+		<phrase key="comment_tab" module="common"><![CDATA[Comments]]></phrase>
+		<phrase key="comment_add_comment" module="common"><![CDATA[Add Comment]]></phrase>
+		<phrase key="comment_author" module="common"><![CDATA[Author]]></phrase>
+		<phrase key="comment_title" module="common"><![CDATA[Title]]></phrase>
+		<phrase key="notice_comment_added" module="common"><![CDATA[Your comment has been successfully added]]></phrase>
+		<phrase version="3.0.1" key="notice_comment_added_approval" module="common"><![CDATA[Your comment has been successfully added and is awaiting to be reviewed by the Administator, please wait.]]></phrase>
+		<phrase key="comment_post_date" module="common"><![CDATA[Post date]]></phrase>
+		<phrase key="comment_comments" module="common"><![CDATA[Comments]]></phrase>
+		<phrase key="comment_absent" module="common"><![CDATA[There are no comments added]]></phrase>
+		<phrase key="comment_absent_comments_in_listings" module="common"><![CDATA[There are no comments]]></phrase>
+		<phrase key="comment_rating" module="common"><![CDATA[Rating]]></phrase>
+		<phrase key="comment_set" module="common"><![CDATA[Set {stars} stars]]></phrase>
+		<phrase key="comment_author_rating" module="common"><![CDATA[Author rating]]></phrase>
+	</phrases>
+	<emails>
+		<email version="3.0.1" key="comment_email" subject="New commend has been added to your listing"><![CDATA[Dear {username},
+
+Your listing has a new comment, please see the details below:
+<b>Listing:</b> {listing_title}
+<b>Author:</b> {author}
+<b>Title:</b> {title}
+<b>Message:</b>
+{message}
+
+______________________________
+Thank you,
+{site_name}
+Administration Team]]></email>
+	</emails>
+	
+	<blocks>
+		<block key="comments_block" login="0" name="Comments" side="left" type="smarty" tpl="1"><![CDATA[
+			{include file=$smarty.const.RL_PLUGINS|cat:'comment'|cat:$smarty.const.RL_DS|cat:'comment.sidebar.tpl'}
+		]]></block>
+	</blocks>
+	<configs key="comment" name="Comment">
+		<![CDATA[]]>
+		<config key="comments_common" name="Common" type="divider"><![CDATA[]]></config>
+		<config key="comments_send_email_after_added_comment" name="Send e-mail notification to listing owner" description="" values="" type="bool" validate=""><![CDATA[1]]></config>
+		<config key="security_img_comment_captcha" name="Security Code" description="" values="" type="bool" validate=""><![CDATA[1]]></config>
+		<config key="comment_auto_approval" name="Comments auto approval" description="" values="" type="bool" validate=""><![CDATA[1]]></config>
+		<config key="comment_message_symbols_number" name="Maximum characters number of message text" description="" values="" type="text" validate="int"><![CDATA[300]]></config>
+		<config key="comments_nav_target" name="Open comments page in new window" description="" values="" type="bool" validate=""><![CDATA[0]]></config>
+		<config key="comments_login_access" name="Prevent not logged in users" description="" values="" type="bool" validate=""><![CDATA[0]]></config>
+		<config key="comments_comment_block" name="Comment block" type="divider"><![CDATA[]]></config>
+		<config key="comments_select_comments_random" name="Get comments type" description="" values="Last,Random" type="select" validate=""><![CDATA[Last]]></config>
+		<config key="comments_number_comments" name="Comments number in block" description="" values="" type="text" validate="int"><![CDATA[5]]></config>
+		<config key="comments_number_symbols_comments" name="Characters number for comment truncating" description="" values="" type="text" validate="int"><![CDATA[70]]></config>
+		<config key="comments_rating_group" name="Rating" type="divider"><![CDATA[]]></config>
+		<config key="comments_rating_module" name="Comments rating" description="" values="" type="bool" validate=""><![CDATA[1]]></config>
+		<config key="comments_stars_number" name="Stars number" description="" values="" type="text" validate="int"><![CDATA[10]]></config>
+	</configs>
+	
+	<uninstall><![CDATA[
+		global $rlDb;
+		$sql = "DROP TABLE `".RL_DBPREFIX."comments`";
+		$rlDb -> query($sql);
+		
+		$sql = "ALTER TABLE `".RL_DBPREFIX."listings` DROP `comments_count`";
+		$rlDb -> query($sql);
+	]]></uninstall>
+</plugin>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="rssfeed">
+	<title>RssFeed Boxes</title>
+	<description>Enables generating Rss Feed boxes on your website</description>
+	<author>John Freeman</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>2.0.0</version>
+	<date>10.04.2012</date>
+	<controller>rssfeed</controller>
+	
+	<files>
+		<file>rlRssFeed.class.php</file>
+		<file>block.tpl</file>
+		<file>admin/rssfeed.inc.php</file>
+		<file>admin/rssfeed.tpl</file>
+	</files>
+	
+	<install><![CDATA[
+	global $rlDb;
+	
+	$sql = "
+	CREATE TABLE `".RL_DBPREFIX."rss_feed` (
+		`ID` int(11) NOT NULL auto_increment,
+		`Key` varchar(50) NOT NULL default '',
+		`Side` varchar(15) NOT NULL default '',
+		`Tpl` enum('1','0') NOT NULL default '1',
+		`Url` varchar(255) NOT NULL default '',
+		`Date` datetime NOT NULL default '0000-00-00 00:00:00',
+		`Article_num` int(2) NOT NULL default '5',
+		`Status` enum('active','approval') NOT NULL default 'active',
+		KEY `ID` (`ID`)
+	)CHARSET=utf8";
+
+	$rlDb -> query($sql);
+	]]>
+	</install>
+	
+	<phrases>
+		<phrase key="add_new_rss" module="admin"><![CDATA[Add new Feed]]></phrase>
+		<phrase key="edit_rss" module="admin"><![CDATA[Edit Feed]]></phrase>
+		<phrase key="rssfeed_link" module="admin"><![CDATA[RSS Feed URL]]></phrase>
+		<phrase key="ext_article_num" module="ext"><![CDATA[Articles number]]></phrase>
+		<phrase key="article_num" module="admin"><![CDATA[Number of articles in box]]></phrase>
+		<phrase key="rssfeed_ext_caption" module="ext"><![CDATA[RSS Feeds Manager]]></phrase>
+		<phrase key="rssfeed_not_found" module="frontEnd"><![CDATA[No RSS feed data]]></phrase>
+	</phrases>
+	
+	<uninstall><![CDATA[
+		global $rlDb;
+		$sql = "DROP TABLE `".RL_DBPREFIX."rss_feed`";
+		$rlDb -> query($sql);
+		]]>
+	</uninstall>
+</plugin>

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="online">
+	<title>Online</title>
+	<description>Show who's online now</description>
+	<author>Alex</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>2.0.1</version>
+	<date>03.01.2011</date>
+
+	<files>
+		<file>admin/statistics_block.tpl</file>
+		<file>admin/statistics_dom.tpl</file>
+		<file>online.left_block.tpl</file>
+		<file>rlOnline.class.php</file>
+	</files>
+
+	<install>
+	<![CDATA[
+		global $rlDb;
+
+		$rlDb -> query( "
+		CREATE TABLE `". RL_DBPREFIX ."online` (
+		  `ID` int(11) NOT NULL AUTO_INCREMENT,
+		  `sess_id` varchar(32) NOT NULL DEFAULT '',
+		  `ip` varchar(15) NOT NULL,
+		  `last_online` int(10) NOT NULL DEFAULT '0',
+		  `visibility` enum('0','1') NOT NULL DEFAULT '1',
+		  `is_login` enum('0','1') NOT NULL DEFAULT '0',
+		  KEY `ID` (`ID`)
+		) DEFAULT CHARSET=utf8;" );
+
+		if ( strpos($_COOKIE['ap_blocks_status'], 'online_block') === false )
+		{
+			setcookie("ap_blocks_status", "{$_COOKIE['ap_blocks_status']},online_block|false", time() + 86400);
+		}
+		$rlDb -> query("UPDATE `". RL_DBPREFIX ."blocks` SET `Page_ID` = '1', `Sticky` = '0' WHERE `Key` = 'online_block'");
+	]]>
+	</install>
+
+	<hooks>
+		<hook version="2.0.1" name="specialBlock">
+			<![CDATA[
+				global $block_keys, $reefless;
+
+				$reefless -> loadClass('Online', false, 'online');
+				$GLOBALS['rlOnline'] -> statistics();
+
+				if ( array_key_exists( 'online_block', $block_keys ) )
+				{
+					$statistics = $GLOBALS['rlOnline'] -> fetchStatisticsInfo();
+					$GLOBALS['rlSmarty'] -> assign('onlineStatistics', $statistics);
+					unset($statistics);
+				}
+			]]>
+		</hook>
+		<hook version="2.0.1" name="cronAdditional">
+			<![CDATA[
+				$timeToRemove = mktime(0, 0, 0, date('m'), date('d'), date('Y'));
+				$GLOBALS['rlDb'] -> query("DELETE FROM `". RL_DBPREFIX ."online` WHERE `last_online` <= '{$timeToRemove}'");
+			]]>
+		</hook>
+		<hook version="2.0.1" name="apPhpHome">
+			<![CDATA[
+				$GLOBALS['reefless'] -> loadClass('Online', false, 'online');
+				$GLOBALS['rlXajax'] -> registerFunction(array('adminStatistics', $GLOBALS['rlOnline'], 'ajaxAdminStatistics'));
+			]]>
+		</hook>
+	</hooks>
+
+	<configs key="online" name="Online">
+		<![CDATA[]]>
+		<config key="online_downtime" name="Downtime" description="minutes" type="text" validate="int"><![CDATA[3]]></config>
+		<config key="online_last_hour" name="Last hour" description="hour" type="text" validate="int"><![CDATA[1]]></config>
+		<config key="online_last_day" name="Last day" description="hour" type="text" validate="int"><![CDATA[24]]></config>
+	</configs>
+
+	<blocks>
+		<block key="online_block" name="Online" side="left" type="smarty" tpl="1">
+			<![CDATA[
+				{include file=$smarty.const.RL_PLUGINS|cat:'online'|cat:$smarty.const.RL_DS|cat:'online.left_block.tpl'}
+			]]>
+		</block>
+	</blocks>
+
+	<aBlocks>
+		<aBlock key="online_block" name="Who's online now" column="1" fixed="0" ajax="1">
+			<![CDATA[
+				$GLOBALS['rlSmarty'] -> display(RL_PLUGINS .'online'. RL_DS .'admin'. RL_DS .'statistics_block.tpl');
+			]]>
+		</aBlock>
+	</aBlocks>
+
+	<phrases>
+		<phrase key="online_statistics_text" module="common"><![CDATA[Statistics]]></phrase>
+		<phrase key="online_count_last_hour_text" module="common"><![CDATA[Last hour]]></phrase>
+		<phrase key="online_count_last_day_text" module="common"><![CDATA[Last day]]></phrase>
+		<phrase key="online_count_all_text" module="common"><![CDATA[Online [number] person(s)]]></phrase>
+		<phrase key="online_count_users_text" module="common"><![CDATA[Users]]></phrase>
+		<phrase key="online_count_guests_text" module="common"><![CDATA[Guests]]></phrase>
+	</phrases>
+
+	<updates>
+		<update version="2.0.1" files="rlOnline.class.php"><![CDATA[]]></update>
+	</updates>
+
+	<uninstall>
+		<![CDATA[
+			$GLOBALS['rlDb'] -> query( "DROP TABLE `". RL_DBPREFIX ."online`" );
+		]]>
+	</uninstall>
+
+</plugin>

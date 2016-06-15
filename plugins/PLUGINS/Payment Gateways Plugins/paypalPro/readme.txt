@@ -1,0 +1,5 @@
+Flynax PayPal Pro plugin allows you to connect your website to PayPal Pro Payments, in other words it turns your website into a credit card terminal. Your site users will be able to pay by credit or debit cards in 24 currencies without need a PayPal account right on your website and you will get your money in minutes.
+
+PayPal Payment Pro allows you to set up an ideal payment system for your website services. It appears as a couple of additional fields on a website's page for entering credit card number just directly on your website and make transaction. Along with PayPal Express Checkout, provides your site users with a maximum of choice and a way on how to pay: by credit/debit card directly on your site, or through PayPal account.
+
+To offer PayPal Payments Pro on your website you should enable PayPal Pro Checkout in your PayPal account.

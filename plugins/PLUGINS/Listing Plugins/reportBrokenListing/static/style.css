@@ -1,0 +1,15 @@
+a.reportBroken img,
+a.removeBroken img
+{
+	background: url('gallery.png') 0 0 no-repeat;
+	width: 16px;
+	height: 16px;
+	margin-left: 4px;
+}
+a.removeBroken img {
+	background-position: 0 -17px!important;
+}
+a.reportBrokenGrid img
+{
+	margin: 0;
+}

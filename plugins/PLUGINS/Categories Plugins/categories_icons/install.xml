@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="categories_icons">
+	<title>Categories Icons</title>
+	<description>Categories Icons plugin</description>
+	<author>Vladimir</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>2.1.1</version>
+	<date>03.01.2012</date>
+	
+	<files>
+        <file>admin/add_category_block.tpl</file>
+        <file>admin/apPhpCategoriesBeforeAdd.php</file>
+        <file>admin/apPhpCategoriesBeforeEdit.php</file>
+        <file>admin/apPhpConfigAfterUpdate.php</file>
+        <file>rlCategoriesIcons.class.php</file>
+        <file>icons_pre_category.tpl</file>
+		<file>icons_post_category.tpl</file>
+        <file>subcat_icons.tpl</file>
+	</files>
+
+	<install>
+		<![CDATA[
+			global $rlDb, $rlCache;
+			$sql = "ALTER TABLE `".RL_DBPREFIX."categories` ADD `Icon` varchar(255) NOT NULL;";
+			$rlDb->query($sql);
+
+			$rlCache->updateCategories();
+        ]]>
+	</install>
+
+	<hooks>
+        <hook name="getCategoriesModifySelect">
+            <![CDATA[
+				global $select;
+				$select[] = 'Icon';
+            ]]>
+        </hook>
+        <hook name="tplPreCategory">
+            <![CDATA[
+                $GLOBALS['rlSmarty']->display(RL_ROOT . 'plugins' . RL_DS . 'categories_icons' . RL_DS . 'icons_pre_category.tpl');
+            ]]>
+        </hook>		
+        <hook name="tplPostCategory">
+            <![CDATA[
+                $GLOBALS['rlSmarty']->display(RL_ROOT . 'plugins' . RL_DS . 'categories_icons' . RL_DS . 'icons_post_category.tpl');
+            ]]>
+        </hook>
+        <hook name="tplPreSubCategory">
+            <![CDATA[
+                $GLOBALS['rlSmarty']->display(RL_ROOT . 'plugins' . RL_DS . 'categories_icons' . RL_DS . 'subcat_icons.tpl');
+            ]]>
+        </hook>
+        <hook name="apTplCategoriesForm">
+            <![CDATA[
+                $GLOBALS['rlSmarty']->display(RL_ROOT . 'plugins' . RL_DS . 'categories_icons' . RL_DS .  'admin' . RL_DS . 'add_category_block.tpl');
+            ]]>
+        </hook>
+        <hook name="apPhpCategoriesBeforeAdd">
+            <![CDATA[
+				require_once(RL_PLUGINS .'categories_icons'. RL_DS . 'admin' . RL_DS . 'apPhpCategoriesBeforeAdd.php');
+            ]]>
+        </hook>
+        <hook name="apPhpCategoriesBeforeEdit">
+            <![CDATA[
+				require_once(RL_PLUGINS .'categories_icons'. RL_DS . 'admin' . RL_DS . 'apPhpCategoriesBeforeEdit.php');
+            ]]>
+        </hook>
+        <hook name="apPhpCategoriesBottom">
+            <![CDATA[
+				global $rlXajax;
+
+			    $GLOBALS['reefless']->loadClass('CategoriesIcons' , null, 'categories_icons'); 
+			    $rlXajax->registerFunction(array('deleteIcon', $GLOBALS['rlCategoriesIcons'], 'ajaxDeleteIcon'));
+            ]]>
+        </hook>
+		<hook name="apPhpCategoriesPost">
+            <![CDATA[
+				global $category_info;
+
+			    $_POST['icon'] = $category_info['Icon'];
+            ]]>
+        </hook>
+		<hook name="apPhpConfigAfterUpdate" version="2.1.0">
+            <![CDATA[                             
+				require_once(RL_PLUGINS .'categories_icons'. RL_DS . 'admin' . RL_DS . 'apPhpConfigAfterUpdate.php');
+            ]]>
+        </hook>
+		
+	</hooks>
+
+	<phrases>
+        <phrase key="category_icon" module="admin"><![CDATA[Category Edit Icon]]></phrase>
+        <phrase key="categories_icon_upload_image" module="admin"><![CDATA[Upload Image]]></phrase>
+        <phrase key="category_icon_image" module="admin"><![CDATA[Image]]></phrase>
+        <phrase key="category_icon_notice" module="admin"><![CDATA[The icon will be resized relative to the following sizes: <b>[width]px</b>/<b>[height]px</b>, click [here] to edit sizes.]]></phrase>
+        <phrase key="category_icon_icon_deleted" module="admin"><![CDATA[Category icon has been successfully deleted.]]></phrase>
+		<phrase key="category_icon" module="admin"><![CDATA[Category Icon]]></phrase>
+		<phrase key="current_icon" module="admin"><![CDATA[Current Icon]]></phrase>
+	</phrases>
+
+	<configs key="categories_icons" name="Categories Icons">
+		<![CDATA[]]>
+        <config key="categories_icons_width" name="Icon width" description="" values="" type="text" validate="int"><![CDATA[50]]></config>
+        <config key="categories_icons_height" name="Icon height" description="" values="" type="text" validate="int"><![CDATA[50]]></config>  
+		<config key="categories_icons_crop_module" name="Use Crop" description="" values="" type="bool" validate="int"><![CDATA[1]]></config>
+        <config key="categories_icons_position" name="Icon position relative category name" description="" values="left,right,top,bottom" type="select" validate=""><![CDATA[left]]></config>
+	</configs>
+
+	<updates>
+		<update version="2.1.0" files="admin/add_category_block.tpl,admin/apPhpCategoriesBeforeAdd.php,admin/apPhpCategoriesBeforeEdit.php,rlCategoriesIcons.class.php,admin/apPhpConfigAfterUpdate.php"><![CDATA[]]></update>
+		<update version="2.1.1" files="admin/apPhpCategoriesBeforeAdd.php,admin/apPhpCategoriesBeforeEdit.php,rlCategoriesIcons.class.php"><![CDATA[]]></update>
+	</updates>
+
+	<uninstall version="2.1.0">
+		<![CDATA[
+			global $rlDb, $rlCache;
+
+			$cats = $rlDb->fetch(array('Icon'), null, "WHERE `Icon` <> ''", null, 'categories');
+
+			foreach($cats as $key => $value)
+			{
+				unlink(RL_FILES . $value['Icon']);
+				unlink(RL_FILES . str_replace("icon", "icon_original", $value['Icon']));
+			}
+
+			$sql = "ALTER TABLE `".RL_DBPREFIX."categories` DROP `Icon`";
+			$rlDb->query($sql);
+
+			$rlCache->updateCategories();
+        ]]>
+	</uninstall>
+</plugin>

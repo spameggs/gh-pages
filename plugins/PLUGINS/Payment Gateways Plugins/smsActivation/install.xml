@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="smsActivation">
+	<title>SMS Account Activation</title>
+	<description>Activates user account through SMS service provided by clickatell.com</description>
+	<author>John Freeman</author>
+	<owner>Flynax classifieds software</owner>
+	<version>2.0.1</version>
+	<date>30.07.2012</date>
+	<notice><![CDATA[Please visit the following forum thread to get detailed instruction of smsActication plugin using: <a href="#">Instruction</a>]]></notice>
+	
+	<files>
+		<file>account_activation.inc.php</file>
+		<file>account_activation.tpl</file>
+		<file>completed.tpl</file>
+		<file>rlSmsActivation.class.php</file>
+		<file>sesExpired.tpl</file>
+		<file>tab.tpl</file>
+	</files>
+	
+	<install><![CDATA[
+	global $rlDb;
+	
+	/* alter fields */
+	$sql = "ALTER TABLE `". RL_DBPREFIX ."accounts` ADD `smsActivation` ENUM( '0', '1' ) DEFAULT '1' NOT NULL AFTER `Status`";
+	$rlDb -> query($sql);
+	
+	$sql = "ALTER TABLE `". RL_DBPREFIX ."accounts` ADD `smsActivation_code` varchar(15) NOT NULL AFTER `smsActivation`";
+	$rlDb -> query($sql);
+	]]>
+	</install>
+
+	<hooks>
+		<hook name="registerSuccess"><![CDATA[
+	 		global $reefless, $config, $pages, $profile_data;
+	 		if ( $config['sms_activation_module'] && $config['sms_activation_username'] && $config['sms_activation_api_id'] && $config['sms_activation_password'] )
+	 		{
+	 			$_SESSION['smsActication_username'] = $profile_data['username'];
+	 			$redirect = SEO_BASE;
+	 			$redirect .= $config['mod_rewrite'] ? "{$pages['sms_activation']}.html" : "?page={$pages['sms_activation']}";
+				$reefless -> redirect( null, $redirect );
+				exit;
+			}
+		]]></hook>
+		<hook version="2.0.1" name="beforeRegister"><![CDATA[
+		 	global $account_types, $config;
+		 	
+		 	foreach($account_types as &$account_type)
+		 	{
+		 		$account_type['Email_confirmation'] = 0;
+		 		$account_type['Admin_confirmation'] = 0;
+		 	}
+		 	
+		 	/* hack for <= 4.0.1 version */
+		 	$config['account_email_confirmation'] = 0;
+		 	$config['account_admin_confirmation'] = 0;
+		]]></hook>
+		<hook name="specialBlock"><![CDATA[
+		 	global $account_types, $account_info, $reefless;
+		 	
+		 	$reefless -> loadClass('SmsActivation', null, 'smsActivation');
+		]]></hook>
+		<hook name="profileController"><![CDATA[
+		 	$GLOBALS['rlSmsActivation'] -> profileTab();
+		]]></hook>
+		<hook name="profileBlock"><![CDATA[
+			global $rlSmarty;
+			
+		 	if ( $GLOBALS['rlSmsActivation'] -> access )
+		 	{
+		 		$rlSmarty -> display(RL_ROOT . 'plugins' . RL_DS . 'smsActivation' . RL_DS . 'tab.tpl');
+		 	}
+		]]></hook>
+	</hooks>
+
+	<phrases>
+		<phrase key="smsActivation_phone_fields_doesnot_exist" module="frontEnd"><![CDATA[<b>SYSTEM ERROR</b>: Phone fields were not detected, please contact administrator to solve this issue.]]></phrase>
+		<phrase key="smsActivation_phone_value_doesnot_exist" module="frontEnd"><![CDATA[Your phone number has not been detected, please log in [Account Area] and specify your Mobile Phone number.]]></phrase>
+		<phrase key="smsActivation_no_phone_error" module="frontEnd"><![CDATA[Mobile phone number has not been detected.]]></phrase>
+		<phrase key="smsActivation_account_approved" module="frontEnd"><![CDATA[Your account hasn't been activated due to system issue, please [contact] website administration or try to log in and activate your account later.]]></phrase>
+		<phrase key="smsActivation_access_deny" module="frontEnd"><![CDATA[You are unable to access this page until your account does not approved by SMS, please go to [My Profile] page and proceed with activation.]]></phrase>
+		<phrase key="smsActivation_tab_caption" module="frontEnd"><![CDATA[sms Activation]]></phrase>
+		<phrase key="smsActivation_message_text" module="frontEnd"><![CDATA[Your activation code is: {code}]]></phrase>
+		<phrase key="smsActication_meesage_sent" module="frontEnd"><![CDATA[The SMS has been sent.]]></phrase>
+		<phrase key="smsActication_meesage_sent_text" module="frontEnd"><![CDATA[The SMS has been sent to your mobile phone ({phone}), please find the <b>{number} digit</b> number and type it to the field below.]]></phrase>
+		<phrase key="smsActivation_confirm" module="frontEnd"><![CDATA[Confirm]]></phrase>
+		<phrase key="smsActivation_sesseion_expired" module="frontEnd"><![CDATA[Session expired, please log into Account Area]]></phrase>
+		<phrase key="smsActivation_sesseion_expired_notice" module="frontEnd"><![CDATA[Your session has been expired, please log into Account Area and proceed with activation.]]></phrase>
+		<phrase key="smsActivation_code_is_wrong" module="frontEnd"><![CDATA[Inserted code is wrong, please check the code and try again.]]></phrase>
+		<phrase key="smsActivation_code" module="frontEnd"><![CDATA[Code]]></phrase>
+		<phrase key="smsActivation_get_code" module="frontEnd"><![CDATA[Get new code]]></phrase>
+		<phrase key="smsActivation_activated" module="frontEnd"><![CDATA[Your account has been secessfully activated, please log in.]]></phrase>
+		<phrase key="smsActivation_activated_aa" module="frontEnd"><![CDATA[Your account has been secessfully activated.]]></phrase>
+		<phrase key="smsActivation_sending_fail" module="frontEnd"><![CDATA[SMS gateway error: {error}]]></phrase>
+		<phrase key="smsActivation_or" module="frontEnd"><![CDATA[or]]></phrase>
+		<phrase key="smsActivation_sending_fail_notice" module="frontEnd"><![CDATA[We unable to send the SMS to your phone number.<br />Please [contact] website administrator or try to activate your account one more time, log in Customer Area and proceed with activation.]]></phrase>
+		<phrase key="smsActivation_profile_text" module="frontEnd"><![CDATA[Please enter your code to the field above or click on "Get new code" button if you still have not the code.<br /> Be sure that your phone number is correct.]]></phrase>
+		<phrase key="smsActivation_get_code_confirm" module="frontEnd"><![CDATA[Are you sure you wont to generate new activation code?]]></phrase>
+		<phrase key="smsActivation_regenerated" module="frontEnd"><![CDATA[New code has been sent to your mobile number <b>{number}</b>, <br />please find the code and type it to the box.]]></phrase>
+	</phrases>
+
+	<configs key="smsActivation_group" name="SMS Activation">
+		<![CDATA[]]>
+		<config key="sms_activation_general" name="General" values="" type="divider"><![CDATA[]]></config>
+		<config key="sms_activation_module" name="SMS Account activation module" values="" type="bool"><![CDATA[1]]></config>
+		<config key="sms_activation_phone_field" name="Registration phone field key" description="List all phone fields keys related to registration form, use comma as delimiter" type="text"><![CDATA[phone]]></config>
+		<config key="sms_activation_code_length" name="Confirmation code length" values="" type="text" validate="int"><![CDATA[4]]></config>
+		<config key="sms_activation_account_divider" name="Clickatell Account Details" values="" type="divider"><![CDATA[]]></config>
+		<config key="sms_activation_username" name="Username" values="" type="text"><![CDATA[]]></config>
+		<config key="sms_activation_password" name="Password" values="" type="text"><![CDATA[]]></config>
+		<config key="sms_activation_api_id" name="API ID" values="" type="text"><![CDATA[]]></config>
+	</configs>
+	
+	<pages>
+		<page key="sms_activation" name="Account Activation" type="system" path="account-activation" controller="account_activation" menus="" tpl="1"><![CDATA[]]></page>
+	</pages>
+	
+	<updates>
+		<update version="2.0.1" files="account_activation.inc.php,rlSmsActivation.class.php"><![CDATA[]]></update>
+	</updates>
+	
+	<uninstall><![CDATA[
+	global $rlDb;
+	
+	/* alter drop fields */
+	$sql = "ALTER TABLE `". RL_DBPREFIX ."accounts` DROP `smsActivation`";
+	$rlDb -> query($sql);
+	
+	$sql = "ALTER TABLE `". RL_DBPREFIX ."accounts` DROP `smsActivation_code`";
+	$rlDb -> query($sql);
+	]]>
+	</uninstall>
+</plugin>

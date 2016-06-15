@@ -1,0 +1,1 @@
+IP Geolocation Database plugin creates a local database which contains information on all IP addresses and its location data. Plugin uses this database and makes only one request during a client’s session into a local database and receives all needed information on location of a visitor. Further this information will be used by plugins and software modules.

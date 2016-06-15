@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="export_import">
+	<title>Listing Export/Import</title>
+	<description>The plugin allows users to export/import listings in CSV and XLS formats</description>
+	<author>John Freeman</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>3.2.0</version>
+	<date>16.08.2012</date>
+	<controller>export_import</controller>
+
+	<files>
+		<file>admin/export_import.inc.php</file>
+		<file>admin/export_import.tpl</file>
+		<file>admin/import.php</file>
+		<file>admin/import_interface.tpl</file>
+		<file>admin/search.tpl</file>
+		<file>admin/row.tpl</file>
+		<file>static/gallery.png</file>
+		<file>static/lib.js</file>
+		<file>static/lib_admin.js</file>
+		<file>static/style.css</file>
+		<file>static/front-end.css</file>
+		<file>rlExportImport.class.php</file>
+		<file>controller.inc.php</file>
+		<file>controller.tpl</file>
+		<file>import.php</file>
+		<file>search.tpl</file>
+	</files>
+
+	<install><![CDATA[
+		$sql = "ALTER TABLE `".RL_DBPREFIX."listings` ADD `Import_file` VARCHAR( 100 ) NOT NULL AFTER `Date`";
+		$GLOBALS['rlDb'] -> query($sql);
+		
+		global $key;
+		$current_version = $GLOBALS['rlDb'] -> getOne('Version', "`Key` = '{$key}'", 'plugins');
+		
+		if ( version_compare($current_version, "3.0.0") < 0 )
+		{
+			$sql = "UPDATE `".RL_DBPREFIX."lang_keys` SET `Module` = 'common' WHERE `Plugin` = 'export_import' AND `Module` = 'admin'";
+			$GLOBALS['rlDb'] -> query($sql);
+		}
+	
+		global $reefless;
+		
+		$reefless -> loadClass('Actions');
+		$GLOBALS['rlActions'] -> enumAdd('account_types', 'Abilities', 'export_import');
+		
+		$sql = "UPDATE `".RL_DBPREFIX."account_types` SET `Abilities` = CONCAT(`Abilities`, ',export_import') WHERE `Key` <> 'visitor' AND `Abilities` <> ''";
+		$GLOBALS['rlDb'] -> query($sql);
+		
+		$sql = "UPDATE `".RL_DBPREFIX."account_types` SET `Abilities` = 'export_import' WHERE `Key` <> 'visitor' AND `Abilities` = ''";
+		$GLOBALS['rlDb'] -> query($sql);
+	]]></install>
+	
+	<hooks>
+		<hook name="apTplHeader"><![CDATA[
+			global $controller;
+			
+			if ( $controller == 'export_import' )
+			{
+				echo '<link href="'. RL_PLUGINS_URL .'export_import/static/style.css" type="text/css" rel="stylesheet" />';
+			}
+		]]></hook>
+		<hook name="apPhpIndexBottom"><![CDATA[
+			global $breadCrumbs, $controller;
+			
+			if ( $controller == 'export_import' && $_GET['action'] == 'import' )
+			{
+				$breadCrumbs[0]['Controller'] .= '&amp;reset';
+			}
+			elseif ( $controller == 'export_import' && $_GET['action'] == 'importing' )
+			{
+				$breadCrumbs[0]['Controller'] .= '&amp;action=import';
+			}
+			elseif ( $controller == 'export_import' && $_GET['action'] == 'export_table' )
+			{
+				$breadCrumbs[0]['Controller'] .= '&amp;action=export';
+			}
+		]]></hook>
+		<hook name="apExtListingsFilters"><![CDATA[
+			global $filters, $reefless;
+			if ( $_GET['f_Import_file'] )
+			{
+				$filters['f_Import_file'] = true;
+				
+				unlink($_SESSION['iel_data']['file']);
+				$reefless -> deleteDirectory($_SESSION['iel_data']['archive_dir']);
+				unset($_SESSION['iel_data']);
+			}
+		]]></hook>
+		<hook version="3.0.0" name="listingsModifyFieldSearch"><![CDATA[
+			global $page_info;
+			
+			if ( (defined('REALM') && REALM == 'admin' && $_GET['controller'] == 'export_import') || ($page_info['Key'] == 'xls_export_import') )
+			{
+				$param1 .= "`T7`.`Username` AS `Account_username`, `T7`.`Mail` AS `Account_email`, `T1`.`Main_photo` AS `Picture_URLs`, ";
+			}
+		]]></hook>
+		<hook version="3.0.0" name="listingsModifyWhereSearch"><![CDATA[
+			global $page_info, $account_info;
+			
+			if ( (defined('REALM') && REALM == 'admin' && $_GET['controller'] == 'export_import') || ($page_info['Key'] == 'xls_export_import') )
+			{
+				$category_id = $_SESSION['eil_data']['post']['export_category_id'];
+				if ( $category_id )
+				{
+					$param1 .= "AND ((`T1`.`Category_ID` = '{$category_id}' OR FIND_IN_SET('{$category_id}', `T3`.`Parent_IDs`) > 0) OR (FIND_IN_SET('{$category_id}', `T1`.`Crossed`) > 0)) ";
+				}
+				
+				$from = $_SESSION['eil_data']['post']['export_date_from'];
+				if ( $from )
+				{
+					$param1 .= "AND UNIX_TIMESTAMP(DATE(`T1`.`Pay_date`)) >= UNIX_TIMESTAMP('{$from}') ";
+				}
+				
+				$to = $_SESSION['eil_data']['post']['export_date_to'];
+				if ( $to )
+				{
+					$param1 .= "AND UNIX_TIMESTAMP(DATE(`T1`.`Pay_date`)) <= UNIX_TIMESTAMP('{$to}') ";
+				}
+				
+				if ( $page_info['Key'] == 'xls_export_import' )
+				{
+					$param1 .= "AND `T1`.`Account_ID` = '{$account_info['ID']}' ";
+				}
+			}
+		]]></hook>
+		<hook version="3.0.0" name="tplHeader"><![CDATA[
+			global $page_info;
+			
+			if ( $page_info['Key'] == 'xls_export_import' ) {
+				echo '<link href="'. RL_PLUGINS_URL .'export_import/static/front-end.css" type="text/css" rel="stylesheet" />';
+			}
+		]]></hook>
+		
+		<hook version="3.1.0" name="apPhpAccountTypesTop"><![CDATA[
+			global $rlListingTypes;
+			
+			$rlListingTypes -> types['export_import'] = array(
+				'Key' => 'export_import',
+				'name' => ''
+			);
+		]]></hook>
+		
+		<hook version="3.1.0" name="apTplAccountTypesForm"><![CDATA[
+			global $lang;
+			echo '<script type="text/javascript">$(document).ready(function(){ $("#account_abb").find("input[value=export_import]").parent().contents().filter(function() { if (this.nodeType == 3) { this.textContent = " '. $lang['eil_option_name'] .'"; } }); });</script>';
+		]]></hook>
+		
+		<hook version="3.1.1" name="specialBlock"><![CDATA[
+			global $rlSmarty, $account_info;
+			
+			if ( !in_array('export_import', $account_info['Abilities']) )
+			{
+				$account_menu = $rlSmarty -> get_template_vars('account_menu');
+				foreach( $account_menu as $key => $item )
+				{
+					if ( $item['Key'] == 'xls_export_import' ) {
+						unset($account_menu[$key]);
+					}
+				}
+				
+				$rlSmarty -> assign('account_menu', $account_menu);
+			}
+		]]></hook>
+	</hooks>
+	
+	<phrases>
+		<phrase key="ext_imported_listings_manager" module="ext"><![CDATA[Imported Listings]]></phrase>
+		<phrase key="eil_export" module="common"><![CDATA[Export]]></phrase>
+		<phrase key="eil_export_criteria" module="common"><![CDATA[Export Ñriteria]]></phrase>
+		<phrase key="eil_file_format" module="common"><![CDATA[File Format]]></phrase>
+		<phrase key="eil_xls" module="common"><![CDATA[XLS (Excel)]]></phrase>
+		<phrase key="eil_csv" module="common"><![CDATA[CSV (Comma as a delimiter)]]></phrase>
+		<phrase key="eil_no_listings_found" module="common"><![CDATA[No listings were found that match your search criteria, please try changing your search criteria]]></phrase>
+		<phrase key="eil_no_form" module="common"><![CDATA[Failed to show listings under the category; submit form is not built]]></phrase>
+		<phrase key="eil_upload_file" module="common"><![CDATA[Upload File]]></phrase>
+		<phrase key="eil_import" module="common"><![CDATA[Import]]></phrase>
+		<phrase key="eil_export_listings" module="common"><![CDATA[Table of Listings]]></phrase>
+		<phrase key="eil_importing" module="common"><![CDATA[Importing]]></phrase>
+		<phrase key="eil_importing_caption" module="common"><![CDATA[Importing in process, please wait]]></phrase>
+		<phrase key="eil_preview" module="common"><![CDATA[Preview]]></phrase>
+		<phrase key="eil_no_categories_available" module="common"><![CDATA[There are no available categories ]]></phrase>
+		<phrase key="eil_start" module="common"><![CDATA[Start Importing]]></phrase>
+		<phrase key="eil_back_to_import_form" module="common"><![CDATA[Back to Import Form]]></phrase>
+		<phrase key="eil_back_to_export_criteria" module="common"><![CDATA[Back to Export Criteria]]></phrase>
+		<phrase key="eil_file_for_import" module="common"><![CDATA[File to be imported]]></phrase>
+		<phrase key="eil_file_for_import_desc" module="common"><![CDATA[Use files in csv or xls format]]></phrase>
+		<phrase key="eil_pictures_archive" module="common"><![CDATA[Picture Archive]]></phrase>
+		<phrase key="eil_pictures_archive_desc" module="common"><![CDATA[Use files in zip format]]></phrase>
+		<phrase key="eil_type_for_import_desc" module="common"><![CDATA[Type in which listings will be imported]]></phrase>
+		<phrase key="eil_import_wrong_file_format" module="common"><![CDATA[Error: incompatible file format, please use CSV or XLS files only]]></phrase>
+		<phrase key="eil_import_wrong_archive_format" module="common"><![CDATA[Error: incompatible picture format, please use ZIP files only]]></phrase>
+		<phrase key="eil_import_no_content" module="common"><![CDATA[Ad details are missing in the file uploaded]]></phrase>
+		<phrase key="eil_import_unable_to_upload" module="common"><![CDATA[Failed to upload the file, please check /tmp/upload/ directory permission or contact Flynax Support]]></phrase>
+		<phrase key="eil_select_field" module="common"><![CDATA[- Select Field -]]></phrase>
+		<phrase key="eil_listing_fields" module="common"><![CDATA[Listing Fields]]></phrase>
+		<phrase key="eil_system_fields" module="common"><![CDATA[System Fields]]></phrase>
+		<phrase key="eil_pictures_by_url" module="common"><![CDATA[Pictures by URL*]]></phrase>
+		<phrase key="eil_pictures_urls" module="common"><![CDATA[Picture URL]]></phrase>
+		<phrase key="eil_pictures_by_url_note" module="common"><![CDATA[* - Listing column should contain URLs to pictures separated by comma]]></phrase>
+		<phrase key="eil_pictures_from_zip" module="common"><![CDATA[Picture Name from ZIP**]]></phrase>
+		<phrase key="eil_pictures_from_zip_note" module="common"><![CDATA[** - Listing column should contain picture names (from ZIP archive) separated by comma]]></phrase>
+		<phrase key="eil_owner_account" module="common"><![CDATA[Owner Username or ID]]></phrase>
+		<phrase key="eil_category_name" module="common"><![CDATA[Category Name or ID]]></phrase>
+		<phrase key="eil_listing_wont_imported" module="common"><![CDATA[Import of the listing has been canceled]]></phrase>
+		<phrase key="eil_column_wont_imported" module="common"><![CDATA[Import of the column has been canceled]]></phrase>
+		<phrase key="eil_listing_wont_exported" module="common"><![CDATA[Export of the listing has been canceled]]></phrase>
+		<phrase key="eil_column_wont_exported" module="common"><![CDATA[Export of the column has been canceled]]></phrase>
+		<phrase key="eil_duplicate_fields_selected" module="common"><![CDATA[The field is assigned to more than one column]]></phrase>
+		<phrase key="eil_default_category" module="common"><![CDATA[Default Category]]></phrase>
+		<phrase key="eil_default_owner" module="common"><![CDATA[Default Owner]]></phrase>
+		<phrase key="eil_default_plan" module="common"><![CDATA[Default Plan]]></phrase>
+		<phrase key="eil_default_status" module="common"><![CDATA[Default Status]]></phrase>
+		<phrase key="eil_select_listing_type" module="common"><![CDATA[- Start with selection of a listing type -]]></phrase>
+		<phrase key="eil_paid" module="common"><![CDATA[Mark as paid]]></phrase>
+		<phrase key="eil_no_listings" module="common"><![CDATA[There are no listings to be imported]]></phrase>
+		<phrase key="eil_no_listings_to_export" module="common"><![CDATA[There are no listings to be exported]]></phrase>
+		<phrase key="eil_no_fields_checked" module="common"><![CDATA[Please select columns]]></phrase>
+		<phrase key="eil_no_fields_selected" module="common"><![CDATA[You should assign fields to the columns, at least two columns should have fields assigned]]></phrase>
+		<phrase key="eil_completed" module="common"><![CDATA[Importing completed.  <b>{count}</b> listing(s) imported]]></phrase>
+		<phrase key="eil_per_run" module="common"><![CDATA[Listings per run]]></phrase>
+		<phrase key="eil_per_run_desc" module="common"><![CDATA[Number of listings to be imported per an ajax run]]></phrase>
+		<phrase key="eil_max_file_size" module="common"><![CDATA[The maximum file size:]]></phrase>
+		<phrase key="eil_sub_category_note" module="common"><![CDATA[*** - "Subcategory Name" field should always be associated with a particular "Category Name or ID" field]]></phrase>
+		<phrase key="eil_subcategory_name" module="common"><![CDATA[Sub-category Name***]]></phrase>
+		<phrase key="eil_subcategory_using_fail" module="common"><![CDATA[Please select a "Category Name or ID" field that is associated with the "Sub-category Name" field]]></phrase>
+		<phrase version="3.1.1" key="eil_import_table" module="common"><![CDATA[Import Table]]></phrase>
+		<phrase version="3.0.0" key="eil_total_listings" module="common"><![CDATA[Total Listings]]></phrase>
+		<phrase version="3.0.0" key="eil_fullscreen" module="common"><![CDATA[Fullscreen]]></phrase>
+		<phrase version="3.0.0" key="eil_default_view" module="common"><![CDATA[Default View]]></phrase>
+		<phrase version="3.1.0" key="eil_option_name" module="common"><![CDATA[Allow Excel Export/Import of listings]]></phrase>
+		<phrase version="3.2.0" key="eil_youtube_video_field" module="common"><![CDATA[YouTube video URL or ID****]]></phrase>
+		<phrase version="3.2.0" key="eil_youtube_video_field_note" module="common"><![CDATA[**** - Listing column should contain URLs or IDs of the video separated by comma]]></phrase>
+		<phrase version="3.2.0" key="eil_prepaid_plan" module="common"><![CDATA[Prepaid or Free Plan]]></phrase>
+		<phrase version="3.2.0" key="eil_no_user_plans" module="common"><![CDATA[No plans available]]></phrase>
+		<phrase version="3.2.0" key="eil_free_listing" module="common"><![CDATA[Free Plan]]></phrase>
+		<phrase version="3.2.0" key="eil_prepaid_package" module="common"><![CDATA[Prepaid Package]]></phrase>
+	</phrases>
+
+	<pages>
+		<page version="3.0.0" key="xls_export_import" name="Excel Export &amp; Import" type="system" path="excel-import-export" controller="controller" menus="2" tpl="1" login="1"><![CDATA[]]></page>
+	</pages>
+	
+	<uninstall version="3.1.0"><![CDATA[
+		$sql = "ALTER TABLE `".RL_DBPREFIX."listings` DROP `Import_file`";
+		$GLOBALS['rlDb'] -> query( $sql );
+		
+		global $reefless;
+		
+		$reefless -> loadClass('Actions');
+		$GLOBALS['rlActions'] -> enumRemove('account_types', 'Abilities', 'export_import');
+	]]></uninstall>
+</plugin>

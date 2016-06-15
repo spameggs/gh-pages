@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="listing_status">
+	<title>Listing Status</title>
+	<description>Add ability to change listing status through frontend to Sold or Invisible, or add your Status</description>
+	<author>Dmitry Azavanichus</author>
+	<owner>Flynax classifieds software</owner>
+	<version>2.1.1</version>
+	<date>10.08.2012</date>
+	<controller>listing_status</controller>
+
+	<files>
+		<file>admin/listing_status.tpl</file>
+		<file>admin/watermark.tpl</file>
+		<file>admin/listing_status.inc.php</file>
+		<file>rlListingStatus.class.php</file>
+		<file>status_admin_selector.tpl</file>
+		<file>status_selector.tpl</file>
+		<file>recently_sold.block.tpl</file>
+		<file>sold_large.png</file>
+		<file>sold.png</file>
+	</files>
+	
+	<install><![CDATA[
+			global $rlDb, $reefless;
+			
+			$rlDb -> query( "
+				CREATE TABLE `". RL_DBPREFIX ."listing_status` (
+					`ID` int(11) NOT NULL AUTO_INCREMENT,
+					`Key` VARCHAR( 50 ) NOT NULL ,
+					`Type` varchar( 255 ) NOT NULL ,
+					`Days` INT( 5 ) NOT NULL ,
+					`Count` INT( 10 ) NOT NULL ,
+					`Delete` ENUM( 'simple', 'delete', 'disabled' ) DEFAULT 'simple' NOT NULL ,
+					`Order` ENUM( 'random', 'latest' ) DEFAULT 'latest' NOT NULL ,
+					`Used_block` ENUM( '1', '0' ) DEFAULT '1' NOT NULL ,
+					`Status` ENUM( 'active', 'approval' ) NOT NULL,
+					PRIMARY KEY (`ID`)
+				) DEFAULT CHARSET=utf8;" );				
+			
+			$sql = "ALTER TABLE `".RL_DBPREFIX."listings` ADD `Sub_status` ENUM( 'visible', 'invisible', 'sold' ) DEFAULT 'visible' NOT NULL AFTER `Date`";
+			$rlDb -> query( $sql );
+			
+			$sql = "ALTER TABLE `".RL_DBPREFIX."listings` ADD `Sold_date` DATETIME DEFAULT '0000-00-00 00:00:00' NOT NULL AFTER `Date` ";
+			$rlDb -> query( $sql );	
+			
+			$reefless -> loadClass('ListingStatus', null, 'listing_status');
+			$GLOBALS['rlListingStatus'] -> installWatermark();
+			
+		]]>
+	</install>
+
+	<hooks>
+		<hook name="specialBlock"><![CDATA[
+			global $page_info, $rlXajax, $reefless, $block_keys;
+
+			if ( $page_info['Controller'] == 'my_listings' )
+			{
+				$reefless -> loadClass('ListingStatus', null, 'listing_status');
+				$rlXajax -> registerFunction( array( 'changeStatus', $GLOBALS['rlListingStatus'], 'ajaxChangeStatus' ) );
+				
+				$status = $GLOBALS['rlListingStatus'] -> getStatus();
+				$GLOBALS['rlSmarty'] -> assign_by_ref('status', $status);
+			}
+			]]></hook>
+		<hook name="myListingsafterStatFields"><![CDATA[
+			$GLOBALS['rlSmarty'] -> display(RL_ROOT . 'plugins' . RL_DS . 'listing_status' . RL_DS . 'status_selector.tpl');
+			]]></hook>
+		<hook name="myListingsBottom"><![CDATA[
+			echo '<script type="text/javascript">';
+			echo "$(document).ready(function(){ $('#listings select.selector, #agencies select.selector').change(function(){ var id = $(this).attr('id').split('_')[2]; xajax_changeStatus(id, $(this).val()); }); });";
+			echo "</script>";
+		]]></hook>
+		<hook name="listingsModifyWhere"><![CDATA[
+			global $sql;
+			$sql .="AND `T1`.`Sub_status` <> 'invisible' ";
+			]]></hook>
+		<hook version="2.0.3" name="listingsModifyFieldMyFavorite"><![CDATA[
+			global $sql, $config;
+				if ( version_compare($config['rl_version'], '4.0.1', '<') )
+				{
+					$sql = preg_replace('/SUBSTRING_INDEX\\(GROUP_CONCAT\\(.*\\) AS `Main_photo`,/si', '', $sql);
+					$sql .= "IF( `T1`.`Sub_status`='invisible' OR `T1`.`Sub_status` = 'visible', SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT `T6`.`Thumbnail` ORDER BY `T6`.`Type` DESC, `T6`.`ID` ASC), ',', 1), CONCAT( SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT `T6`.`Thumbnail` ORDER BY `T6`.`Type` DESC, `T6`.`ID` ASC), ',', 1), '.', 1), '_', `T1`.`Sub_status` ,'_".RL_LANG_CODE."', '.', SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT `T6`.`Thumbnail` ORDER BY `T6`.`Type` DESC, `T6`.`ID` ASC), ',', 1), '.', -1))) AS `Main_photo` ,";
+				}
+				else
+				{
+					$sql = preg_replace('/SUBSTRING_INDEX\\(GROUP_CONCAT\\(.*\\) AS `Main_photo`,/si', '', $sql);
+					$sql .= "IF( `T1`.`Sub_status`='invisible' OR `T1`.`Sub_status` = 'visible', `T1`.`Main_photo`, CONCAT( SUBSTRING_INDEX(`T1`.`Main_photo`, '.', 1), '_', `T1`.`Sub_status` ,'_".RL_LANG_CODE."', '.', SUBSTRING_INDEX(`T1`.`Main_photo`, '.', -1))) AS `Main_photo` ,";
+				}
+			]]></hook>
+		<hook name="listingsModifyWhereMyFavorite"><![CDATA[
+			global $sql;
+			$sql .="AND `T1`.`Sub_status` <> 'invisible' ";
+			]]></hook>		
+		<hook version="2.0.3" name="listingsModifyField"><![CDATA[
+			global $sql, $config;
+				if ( version_compare($config['rl_version'], '4.0.1', '<') )
+				{
+					$sql = preg_replace('/SUBSTRING_INDEX\\(GROUP_CONCAT\\(.*\\) AS `Main_photo`,/si', '', $sql);
+					$sql .= "IF( `T1`.`Sub_status`='invisible' OR `T1`.`Sub_status` = 'visible', SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT `T6`.`Thumbnail` ORDER BY `T6`.`Type` DESC, `T6`.`ID` ASC), ',', 1), CONCAT( SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT `T6`.`Thumbnail` ORDER BY `T6`.`Type` DESC, `T6`.`ID` ASC), ',', 1), '.', 1), '_', `T1`.`Sub_status` ,'_".RL_LANG_CODE."', '.', SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT `T6`.`Thumbnail` ORDER BY `T6`.`Type` DESC, `T6`.`ID` ASC), ',', 1), '.', -1))) AS `Main_photo` ,";
+				}
+				else
+				{
+					$sql = preg_replace('/SUBSTRING_INDEX\\(GROUP_CONCAT\\(.*\\) AS `Main_photo`,/si', '', $sql);
+					$sql .= "IF( `T1`.`Sub_status`='invisible' OR `T1`.`Sub_status` = 'visible', `T1`.`Main_photo`, CONCAT( SUBSTRING_INDEX(`T1`.`Main_photo`, '.', 1), '_', `T1`.`Sub_status` ,'_".RL_LANG_CODE."', '.', SUBSTRING_INDEX(`T1`.`Main_photo`, '.', -1))) AS `Main_photo` ,";
+				}
+			]]></hook>
+		<hook version="2.0.3" name="listingsModifyFieldByPeriod"><![CDATA[
+			global $sql, $config;
+				if ( version_compare($config['rl_version'], '4.0.1', '<') )
+				{
+					$sql = preg_replace('/SUBSTRING_INDEX\\(GROUP_CONCAT\\(.*\\) AS `Main_photo`,/si', '', $sql);
+					$sql .= "IF( `T1`.`Sub_status`='invisible' OR `T1`.`Sub_status` = 'visible', SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT `T6`.`Thumbnail` ORDER BY `T6`.`Type` DESC, `T6`.`ID` ASC), ',', 1), CONCAT( SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT `T6`.`Thumbnail` ORDER BY `T6`.`Type` DESC, `T6`.`ID` ASC), ',', 1), '.', 1), '_', `T1`.`Sub_status` ,'_".RL_LANG_CODE."', '.', SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT `T6`.`Thumbnail` ORDER BY `T6`.`Type` DESC, `T6`.`ID` ASC), ',', 1), '.', -1))) AS `Main_photo` ,";
+				}
+				else
+				{
+					$sql = preg_replace('/SUBSTRING_INDEX\\(GROUP_CONCAT\\(.*\\) AS `Main_photo`,/si', '', $sql);
+					$sql .= "IF( `T1`.`Sub_status`='invisible' OR `T1`.`Sub_status` = 'visible', `T1`.`Main_photo`, CONCAT( SUBSTRING_INDEX(`T1`.`Main_photo`, '.', 1), '_', `T1`.`Sub_status` ,'_".RL_LANG_CODE."', '.', SUBSTRING_INDEX(`T1`.`Main_photo`, '.', -1))) AS `Main_photo` ,";
+				}
+			]]></hook>
+		<hook name="listingsModifyWhereByPeriod"><![CDATA[
+			global $sql;
+			$sql .="AND `T1`.`Sub_status` <> 'invisible' ";
+			]]></hook>
+		<hook version="2.0.3" name="listingsModifyFieldByAccount"><![CDATA[
+			global $sql, $config;
+				if ( version_compare($config['rl_version'], '4.0.1', '<') )
+				{
+					$sql = preg_replace('/SUBSTRING_INDEX\\(GROUP_CONCAT\\(.*\\) AS `Main_photo`,/si', '', $sql);
+					$sql .= "IF( `T1`.`Sub_status`='invisible' OR `T1`.`Sub_status` = 'visible', SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT `T6`.`Thumbnail` ORDER BY `T6`.`Type` DESC, `T6`.`ID` ASC), ',', 1), CONCAT( SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT `T6`.`Thumbnail` ORDER BY `T6`.`Type` DESC, `T6`.`ID` ASC), ',', 1), '.', 1), '_', `T1`.`Sub_status` ,'_".RL_LANG_CODE."', '.', SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT `T6`.`Thumbnail` ORDER BY `T6`.`Type` DESC, `T6`.`ID` ASC), ',', 1), '.', -1))) AS `Main_photo` ,";
+				}
+				else
+				{
+					$sql = preg_replace('/SUBSTRING_INDEX\\(GROUP_CONCAT\\(.*\\) AS `Main_photo`,/si', '', $sql);
+					$sql .= "IF( `T1`.`Sub_status`='invisible' OR `T1`.`Sub_status` = 'visible', `T1`.`Main_photo`, CONCAT( SUBSTRING_INDEX(`T1`.`Main_photo`, '.', 1), '_', `T1`.`Sub_status` ,'_".RL_LANG_CODE."', '.', SUBSTRING_INDEX(`T1`.`Main_photo`, '.', -1))) AS `Main_photo` ,";
+				}
+			]]></hook>
+		<hook name="listingsModifyWhereByAccount"><![CDATA[
+			global $sql;
+			$sql .="AND `T1`.`Sub_status` <> 'invisible' ";
+			]]></hook>
+		<hook version="2.1.0" name="listingsModifyFieldSearch"><![CDATA[
+			global $sql, $config;
+				if ( version_compare($config['rl_version'], '4.0.1', '<') )
+				{
+					$sql = preg_replace('/SUBSTRING_INDEX\\(GROUP_CONCAT\\(.*\\) AS `Main_photo`,/si', '', $sql);
+					$sql .= "IF( `T1`.`Sub_status`='invisible' OR `T1`.`Sub_status` = 'visible', SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT `T4`.`Thumbnail` ORDER BY `T4`.`Type` DESC, `T4`.`ID` ASC), ',', 1), CONCAT( SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT `T4`.`Thumbnail` ORDER BY `T4`.`Type` DESC, `T4`.`ID` ASC), ',', 1), '.', 1), '_', `T1`.`Sub_status` ,'_".RL_LANG_CODE."', '.', SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT `T4`.`Thumbnail` ORDER BY `T4`.`Type` DESC, `T4`.`ID` ASC), ',', 1), '.', -1))) AS `Main_photo` ,";
+				}
+				else
+				{
+					if( strlen($param1) > 40)
+					{
+						$param1 .= " IF( `T1`.`Sub_status`='invisible' OR `T1`.`Sub_status` = 'visible', `T1`.`Main_photo`, CONCAT( SUBSTRING_INDEX(`T1`.`Main_photo`, '.', 1), '_', `T1`.`Sub_status` ,'_".RL_LANG_CODE."', '.', SUBSTRING_INDEX(`T1`.`Main_photo`, '.', -1))) AS `Main_photo` ,";
+					}
+				}
+			]]></hook>
+		<hook name="listingsModifyWhereSearch"><![CDATA[
+			$param1 .="AND `T1`.`Sub_status` <> 'invisible' ";
+			]]></hook>
+		<hook version="2.0.3" name="myListingsSqlFields"><![CDATA[
+			global $sql, $config;
+				if ( version_compare($config['rl_version'], '4.0.1', '<') )
+				{
+					$sql = preg_replace('/SUBSTRING_INDEX\\(GROUP_CONCAT\\(.*\\) AS `Main_photo`,/si', '', $sql);
+					$sql .= ", IF( `T1`.`Sub_status`='invisible' OR `T1`.`Sub_status` = 'visible', SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT `T6`.`Thumbnail` ORDER BY `T6`.`Type` DESC, `T6`.`ID` ASC), ',', 1), CONCAT( SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT `T6`.`Thumbnail` ORDER BY `T6`.`Type` DESC, `T6`.`ID` ASC), ',', 1), '.', 1), '_', `T1`.`Sub_status` ,'_".RL_LANG_CODE."', '.', SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT `T6`.`Thumbnail` ORDER BY `T6`.`Type` DESC, `T6`.`ID` ASC), ',', 1), '.', -1))) AS `Main_photo` ";
+				}
+				else
+				{
+					$sql = preg_replace('/SUBSTRING_INDEX\\(GROUP_CONCAT\\(.*\\) AS `Main_photo`,/si', '', $sql);
+					$sql .= ", IF( `T1`.`Sub_status`='invisible' OR `T1`.`Sub_status` = 'visible', `T1`.`Main_photo`, CONCAT( SUBSTRING_INDEX(`T1`.`Main_photo`, '.', 1), '_', `T1`.`Sub_status` ,'_".RL_LANG_CODE."', '.', SUBSTRING_INDEX(`T1`.`Main_photo`, '.', -1))) AS `Main_photo` ";
+				}
+			]]></hook>
+		<hook name="phpListingsAjaxDeleteListing"><![CDATA[
+			global $reefless, $info;
+			$reefless -> loadClass('ListingStatus', null, 'listing_status');
+			$GLOBALS['rlListingStatus'] -> deleteListingPhotos($info);
+				
+			]]></hook>
+		<hook version="2.1.0" name="cronAdditional"><![CDATA[
+			global $rlDb;
+
+			$sql ="SELECT `T1`.`ID`, `T2`.`Delete`";
+			$sql .="FROM `".RL_DBPREFIX."listings` AS `T1`";
+			$sql .="LEFT JOIN `".RL_DBPREFIX."listing_status` AS `T2` ON `T1`.`Sub_status` = `T2`.`Key` ";		
+			$sql .="WHERE UNIX_TIMESTAMP(DATE_ADD(`T1`.`Sold_date`, INTERVAL `T2`.`Days` DAY)) < UNIX_TIMESTAMP(NOW()) AND (`T1`.`Sub_status` != 'invisible' AND `T1`.`Sub_status` != 'visible') && `T1`.`Status` = 'active'";
+			$sql .= "LIMIT {$GLOBALS['config']['listings_number']}";
+
+			$listings = $GLOBALS['rlDb'] -> getAll( $sql );
+
+			foreach($listings as $key => $listing)
+			{
+				if( $listing['Delete'] == 'delete' )
+				{
+					if($GLOBALS['config']['trash'])
+					{					
+						$sql = "UPDATE `".RL_DBPREFIX."listings` SET `Status` = 'trash' WHERE `ID` = ".$listing['ID'];
+					}
+					else
+					{
+						$GLOBALS['rlListings'] -> deleteListingData($listing['ID']);
+						$sql = "DELETE FROM `".RL_DBPREFIX."listings` WHERE `ID` = ".$listing['ID'];
+					}
+
+				}
+				elseif( $listing['Delete'] == 'disabled' )
+				{
+					$sql = "UPDATE `".RL_DBPREFIX."listings` SET `Status` = 'approval' WHERE `ID` = ".$listing['ID'];
+				}
+				$GLOBALS['rlDb'] -> query( $sql );
+			}
+
+			]]></hook>
+		<hook version="2.0.4" name="listingDetailsBottom"><![CDATA[
+				global $reefless, $photos, $listing_data;
+				if ( $listing_data['Sub_status'] == 'invisible' || $listing_data['Sub_status'] == 'visible' )
+				{
+					return false;
+				}
+				else
+				{
+					$reefless -> loadClass('ListingStatus', null, 'listing_status');
+					$photos = $GLOBALS['rlListingStatus'] -> replacePhotos($photos, $listing_data);
+					$GLOBALS['rlSmarty'] -> assign_by_ref('photos', $photos);
+				}
+			]]></hook>	
+		<hook version="2.0.4" name="apAjaxRecountListings"><![CDATA[
+				$param1 .="AND `T1`.`Sub_status` <> 'invisible' ";
+			]]></hook>			
+		<hook version="2.1.0" name="apTplListingsFormEdit"><![CDATA[
+				$GLOBALS['rlSmarty'] -> display(RL_ROOT . 'plugins' . RL_DS . 'listing_status' . RL_DS . 'status_admin_selector.tpl');
+			]]></hook>
+		<hook version="2.1.0" name="apPhpListingsBottom"><![CDATA[
+				global $rlXajax, $reefless, $listing;
+				$reefless -> loadClass('ListingStatus', null, 'listing_status');
+				$rlXajax -> registerFunction( array( 'changeStatus', $GLOBALS['rlListingStatus'], 'ajaxChangeStatus' ) );
+				if ($_GET['action'] == 'edit')
+				{	
+					$status = $GLOBALS['rlListingStatus'] -> getStatus();
+					$GLOBALS['rlSmarty'] -> assign_by_ref('status', $status);
+					$listing_type = $listing['Listing_type'];
+					$listing_type = $GLOBALS['rlListingTypes']-> types[$listing_type];
+					$GLOBALS['rlSmarty'] -> assign_by_ref('listing_type', $listing_type);
+				}
+			]]></hook>
+		<hook version="2.1.0" name="listingsModifyWhereFeatured"><![CDATA[
+			$param1 .="AND `T1`.`Sub_status` <> 'invisible' ";
+			$photo = "AS `Listing_type`, IF( `T1`.`Sub_status`='invisible' OR `T1`.`Sub_status` = 'visible', `T1`.`Main_photo`, CONCAT( SUBSTRING_INDEX(`T1`.`Main_photo`, '.', 1), '_', `T1`.`Sub_status` ,'_".RL_LANG_CODE."', '.', SUBSTRING_INDEX(`T1`.`Main_photo`, '.', -1))) AS `Main_photo` FROM";
+			$param1 = preg_replace('/AS `Listing_type` FROM/si', $photo, $param1);
+			]]></hook>
+		<hook version="2.1.1" name="listingDetailsSql"><![CDATA[
+			global $sql;
+			$sql .="AND `T1`.`Sub_status` <> 'invisible' ";
+		   ]]></hook>
+		<hook version="2.1.1" name="sitemapGetListingsWhere"><![CDATA[
+			global $sql;
+			$sql .="AND `T1`.`Sub_status` <> 'invisible' ";
+		   ]]></hook>
+	</hooks>
+
+	<phrases>		
+		<phrase key="ls_ext_number" module="ext"><![CDATA[Number of listings]]></phrase>
+		<phrase key="ls_add_new_status" module="admin"><![CDATA[Add a label]]></phrase>
+		<phrase key="ls_block_list" module="admin"><![CDATA[Label List]]></phrase>
+		<phrase key="ls_watermark" module="common"><![CDATA[Watermark]]></phrase>
+		<phrase key="ls_more_listings" module="admin"><![CDATA[Listing of number should not be more 30]]></phrase>
+		<phrase version='2.1.0' key="ls_watermarks_hint" module="admin"><![CDATA[choose watermark file for the label, it will appear on listing images with same resize]]></phrase>
+		<phrase key="ls_removal" module="admin"><![CDATA[removal]]></phrase>
+		<phrase key="ls_unchanged" module="admin"><![CDATA[unchanged]]></phrase>
+		<phrase key="ls_suspension" module="admin"><![CDATA[suspension]]></phrase>
+		<phrase key="ls_delete_days_hint" module="admin"><![CDATA[sets a period during which listings will be either removed or suspended]]></phrase>
+		<phrase key="ls_latest" module="common"><![CDATA[Recently Added]]></phrase>
+		<phrase key="ls_random" module="common"><![CDATA[Random]]></phrase>
+		<phrase key="ls_use_block" module="common"><![CDATA[Display listings in a box]]></phrase>
+		<phrase key="ls_use_block_info" module="common"><![CDATA[listings carrying the label will be displayed in a separate content box]]></phrase>
+		<phrase key="ls_status_block" module="common"><![CDATA[Box status]]></phrase>
+		<phrase key="ls_delete_listings" module="common"><![CDATA[Initiate listings]]></phrase>
+		<phrase key="ls_block_name" module="common"><![CDATA[Box name]]></phrase>
+		<phrase key="ls_block_add" module="common"><![CDATA[The listing label has been successfully add]]></phrase>
+		<phrase key="ls_block_edit" module="common"><![CDATA[The listing label has been successfully edited]]></phrase>
+		<phrase key="ls_block_settings" module="common"><![CDATA[Box settings]]></phrase>
+		<phrase key="ls_label" module="common"><![CDATA[Label]]></phrase>
+		<phrase key="ls_add_label" module="common"><![CDATA[Add label]]></phrase>
+		<phrase key="ls_edit_label" module="common"><![CDATA[Edit label]]></phrase>
+		<phrase version="2.1.0" key="ls_substatus" module="common"><![CDATA[Listing status]]></phrase>
+		<phrase version="2.1.0" key="ls_visible" module="common"><![CDATA[Visible(default)]]></phrase>
+		<phrase version="2.1.0" key="ls_invisible" module="common"><![CDATA[Invisible]]></phrase>
+		<phrase version="2.1.0" key="lsl_sold" module="common"><![CDATA[Sold]]></phrase>
+		<phrase version="2.1.0" key="ls_notice_visible" module="common"><![CDATA[Listing changed to visible]]></phrase>
+		<phrase version="2.1.0" key="ls_notice_invisible" module="common"><![CDATA[Listing changed to invisible, now this listing is hidden for other users]]></phrase>
+		<phrase version="2.1.0" key="ls_notice_sold" module="common"><![CDATA[Listing marked as sold]]></phrase>		
+		<phrase key="ls_notice_all" module="common"><![CDATA[Listing changed to [status] ]]></phrase>
+		<phrase key="rsold_no_listings" module="common"><![CDATA[No <b>[label]</b> listings]]></phrase>
+		<phrase version='2.1.0' key="ls_label_large" module="common"><![CDATA[Label Large]]></phrase>
+		<phrase version='2.1.0' key="ls_ext_add_label" module="ext"><![CDATA[Add Label]]></phrase>
+	</phrases>
+	
+	<blocks>
+		<block key="lb_sold" name="Recently Sold" side="left" type="php" tpl="1"><![CDATA[
+				global $reefless, $rlSmarty;
+				$reefless -> loadClass("ListingStatus", null, "listing_status");
+				global $rlListingStatus;
+				$ls_listings = $rlListingStatus -> getRecentlySoldListings( "listings", "10", "4", "sold", "latest" );
+				$rlSmarty -> assign_by_ref( "ls_listings", $ls_listings );
+				$sold = "sold";			
+				$rlSmarty -> assign_by_ref( "ls_key", $sold );
+				$rlSmarty -> display( RL_PLUGINS . "listing_status" . RL_DS . "recently_sold.block.tpl" );
+		]]></block>
+	</blocks>
+	
+	<updates>
+		<update version="2.0.1" files="rlListingStatus.class.php"><![CDATA[]]></update>
+		<update version="2.0.2" files="recently_sold.block.tpl"><![CDATA[]]></update>
+		<update version="2.0.3" files="rlListingStatus.class.php"><![CDATA[]]></update>
+		<update version="2.0.4"><![CDATA[]]></update>
+		<update version="2.1.0" files="admin/watermark.tpl,admin/listing_status.tpl,admin/listing_status.inc.php,rlListingStatus.class.php,sold_large.psd,sold_large.png,status_admin_selector.tpl"><![CDATA[
+			global $reefless;
+			$reefless -> loadClass('ListingStatus', null, 'listing_status');
+			$GLOBALS['rlListingStatus'] -> updateStatus();			
+		]]></update>
+		<update version="2.1.1" files="admin/listing_status.inc.php,rlListingStatus.class.php"><![CDATA[]]></update>
+	</updates>
+	
+	<uninstall><![CDATA[
+		global $rlDb,$reefless;
+		
+		$reefless -> deleteDirectory(RL_FILES.'watermark');
+		
+		$reefless -> loadClass('ListingStatus', null, 'listing_status');
+		$GLOBALS['rlListingStatus'] -> deleteAllListingPhotosWithLable();
+
+		$rlDb -> query( "DROP TABLE `". RL_DBPREFIX ."listing_status`" );
+		
+		$sql = "ALTER TABLE `".RL_DBPREFIX."listings` DROP `Sub_status`";
+		$rlDb -> query( $sql );
+			
+		$sql = "ALTER TABLE `".RL_DBPREFIX."listings` DROP `Sold_date`";
+		$rlDb -> query( $sql );	
+		]]>
+	</uninstall>
+</plugin>

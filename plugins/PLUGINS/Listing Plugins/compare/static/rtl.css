@@ -1,0 +1,113 @@
+/* RTL comapre listings styles */
+
+div#compare_listings_fixed
+{
+	position: fixed;
+	right: auto;
+	left: 0;
+}
+div#compare_listings_tab
+{
+	padding: 5px 10px 0 30px;
+	padding: 8px 10px 0 30px\9;
+	background-position: left -213px;
+	
+	-moz-transform:rotate(90deg); 
+	-moz-transform-origin: bottom left;
+	-webkit-transform: rotate(90deg);
+	-webkit-transform-origin: bottom left;
+	-o-transform: rotate(90deg);
+	-o-transform-origin: bottom left;
+	filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=1);
+	-ms-transform: rotate(90deg); 
+	-ms-transform-origin: bottom left;
+}
+@media \0screen {
+	div#compare_listings_tab {
+		margin: 0 0 0 -148px;
+	}
+}
+div#compare_listings_area
+{
+	width: 270px;
+	right: auto;
+	left: -272px;
+}
+div#compare_listings_area > div
+{
+	padding: 5px 15px 10px 5px;
+}
+div#compare_listings_area div.body div.item
+{
+	margin: 0 0 0 5px;
+}
+div#compare_listings_area div.body div.item div.remove,
+table.compare div.remove
+{
+	right: auto;
+	left: 0;
+}
+table.compare div.remove
+{
+	right: auto;
+	left: -15px;
+}
+div#compare_listings_area div.button
+{
+	padding: 10px 75px 10px 0;
+}
+div.details_compare_add
+{
+	background: url('gallery.png') left -246px no-repeat;
+	right: auto;
+	left: 0;
+	border-radius: 8px;
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+	border-bottom-left-radius: 0;
+}
+div.details_compare_add > a.add,
+div.details_compare_add > a.remove
+{
+	background-position: 2px -21px;
+}
+div.details_compare_add > a.remove
+{
+	background-position: 2px -50px;
+}
+
+table.compare div.scroll
+{
+	margin: 0 5px 0 0;
+}
+table.compare td.fields-column td.item
+{
+	border-right: 0;
+	border-left: 2px #a3998d solid;
+	padding: 10px;
+	border-bottom: 0;
+}
+table.compare td.fields-content td.item
+{
+	border-right: 0;
+	border-left: 1px #a3998d solid;
+}
+table.compare td.fields-content tr td.item:last-child
+{
+	border-left: 0;
+}
+
+a.compare_fullscreen span,
+a.compare_default span
+{
+	padding: 0 5px 0 20px!important;
+	background-position: left -280px;
+	background-position: left -282px\9;
+}
+a.compare_default span
+{
+	background-position: left -308px;
+	background-position: left -310px\9;
+}
+
+/* RTL comapre listings styles end */

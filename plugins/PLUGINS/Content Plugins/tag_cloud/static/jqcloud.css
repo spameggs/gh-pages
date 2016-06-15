@@ -1,0 +1,16 @@
+div.jqcloud {
+  font-family: "Helvetica", "Arial", sans-serif;
+  color: #09f;
+  overflow: hidden;
+  position: relative;
+  line-height: normal;
+}
+div.jqcloud a {
+  color: inherit;
+  font-size: inherit; 
+}
+div.jqcloud a:hover {
+  color: inherit;
+  font-size: inherit;
+  text-decoration: none;
+}

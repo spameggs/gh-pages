@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="ref">
+	<title>Reference Number</title>
+	<description>Add Reference Number field for search and display</description>
+	<author>Mike Fletcher</author>
+	<owner>Flynax classifieds software</owner>
+	<version>2.0.3</version>
+	<date>21.12.2009</date>
+	
+	<install>
+		<![CDATA[
+			global $rlDb, $rlActions, $rlLang, $rlSmarty, $rlCache;
+
+			$sql = "ALTER TABLE `".RL_DBPREFIX."listings` ADD `ref_number` VARCHAR( 255 ) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL";
+			$rlDb -> query( $sql );
+		
+			$sql = "INSERT INTO `".RL_DBPREFIX."listing_fields` ( `Key`, `Type`, `Required`, `Map`, `Status`, `Add_page`, `Details_page`, `Values`, `Readonly` ) VALUES ( 'ref_number', 'text', '0', '0', 'active', '0', '1', '255', '1' )";
+			$rlDb -> query( $sql );
+
+			$allLangs = $rlLang -> getLanguagesList( 'all' );
+
+			foreach($allLangs as $key => $value)
+			{
+				$lkeys[] = array(
+					'Code' => $allLangs[$key]['Code'],
+					'Module' => 'common',
+					'Status' => 'active',
+					'Key' => 'listing_fields+name+ref_number',
+					'Value' => 'Reference Number',
+					'Plugin' => 'ref'
+				);
+			}
+
+			$rlActions -> insert( $lkeys, 'lang_keys' );
+
+			$id = $rlDb -> getOne('ID', "`Key` ='ref_number'", 'listing_fields');
+
+			foreach( $GLOBALS['rlListingTypes'] -> types as $type_key => $type)
+			{
+				if( $type['Cat_general_cat'] )
+				{
+					$sql ="INSERT INTO `".RL_DBPREFIX."listing_relations` (`Position`, `Category_ID`, `Fields`) VALUES ('0', '".$type['Cat_general_cat']."', '".$id."')";
+					$rlDb -> query( $sql );
+				}
+
+				$sql = "SELECT `T1`.`ID` FROM `".RL_DBPREFIX."categories` AS `T1` ";
+				$sql .="JOIN `".RL_DBPREFIX."listing_relations` AS `T2` ON `T1`.`ID` = `T2`.`Category_ID` ";
+				$sql .="WHERE `T2`.`ID` AND `T1`.`Type` = '".$type_key."' AND `T1`.`ID` != '{$type['Cat_general_cat']}' GROUP BY `T1`.`ID` ";
+				$cats = $rlDb -> getAll($sql);
+
+				foreach( $cats as $key => $cat )
+				{
+					$sql ="INSERT INTO `".RL_DBPREFIX."listing_relations` (`Position`, `Category_ID`, `Fields`) VALUES ('0', '".$cat['ID']."', '".$id."')";
+					$rlDb -> query( $sql );							
+				}
+			}
+
+			$rlCache -> updateSubmitForms();
+
+			$GLOBALS['reefless'] -> loadClass('Ref', null, 'ref');
+			
+			$listings = $rlDb -> fetch( array('ID'), NULL, NULL, NULL, 'listings');
+			foreach( $listings as $key => $listing )
+			{
+				$rn = $GLOBALS['rlRef'] -> generate($listing['ID'], 'RF******');
+				$sql = "UPDATE `".RL_DBPREFIX."listings` SET `ref_number` = '".$rn."' WHERE `ID` = '".$listing['ID']."'";
+				$rlDb -> query($sql);
+			}
+		]]>
+	</install>
+
+	<phrases>
+		<phrase key="ref_not_found" module="frontEnd"><![CDATA[Requested listing not found.]]></phrase>
+		<phrase key="ref_label" module="frontEnd"><![CDATA[Reference number]]></phrase>
+		<phrase key="ref_rebuild" module="admin" version="2.0.3"><![CDATA[Rebuild Reference number for listings]]></phrase>
+		<phrase key="ref_rebuilt" module="admin" version="2.0.3"><![CDATA[Reference numbers have been re-generated]]></phrase>		
+	<phrases>
+
+	<blocks>
+		<block key="ref_search" login="0" name="Ref number look up" side="left" type="smarty" tpl="1"><![CDATA[{include file=$smarty.const.RL_PLUGINS|cat:'ref'|cat:$smarty.const.RL_DS|cat:'ref_block.tpl'}]]></block>
+	</blocks>
+
+	<configs key="ref_number" name="Reference number">
+		<![CDATA[]]>
+		<config key="ref_tpl" name="Ref number template" description="Use * for symbols which will be generated automatically, you can also put #ID# - listing ID" values="" type="text"><![CDATA[RF******]]></config>
+	</configs>
+
+	<hooks>
+		<hook name="afterListingCreate"><![CDATA[
+			global $listing_id;
+			$GLOBALS['reefless'] -> loadClass('Ref', null, 'ref');
+			$ref = $GLOBALS['rlRef'] -> generate($listing_id, $GLOBALS['config']['ref_tpl']);
+			$sql ="UPDATE `".RL_DBPREFIX."listings` SET `ref_number` = '".$ref."' WHERE `ID` = '".$listing_id."'";
+			$GLOBALS['rlDb'] -> query($sql);
+			]]></hook>
+		<hook name="apPhpListingsAfterAdd"><![CDATA[
+			global $listing_id;
+			$GLOBALS['reefless'] -> loadClass('Ref', null, 'ref');
+			$ref = $GLOBALS['rlRef'] -> generate($listing_id, $GLOBALS['config']['ref_tpl']);
+			$sql ="UPDATE `".RL_DBPREFIX."listings` SET `ref_number` = '".$ref."' WHERE `ID` = '".$listing_id."'";
+			$GLOBALS['rlDb'] -> query($sql);
+			]]></hook>
+		<hook name="specialBlock"><![CDATA[
+			global $block_keys, $rlXajax;
+
+			if ( array_key_exists( 'ref_search', $block_keys) )
+			{
+				$GLOBALS['reefless'] -> loadClass('Ref', null, 'ref');
+				$rlXajax -> registerFunction( array( 'refSearch', $GLOBALS['rlRef'], 'ajaxRefSearch' ) );
+			}
+		]]></hook>
+		<hook name="apPhpControlsBottom" version="2.0.3"><![CDATA[
+			$GLOBALS['reefless'] -> loadClass('Ref', null, 'ref');
+			$GLOBALS['rlXajax'] -> registerFunction( array( 'rebuildRefs', $GLOBALS['rlRef'], 'ajaxRebuildRefs' ) );
+			]]></hook>
+		<hook name="apTplControlsForm" version="2.0.3"><![CDATA[
+			echo '<tr class="body"><td class="list_td_light">'.$GLOBALS['lang']['ref_rebuild'].'</td>';
+			echo '<td class="list_td_light" align="center" style="width: 200px;">';
+			echo '<input id="ref_rebuild" type="button" onclick="xajax_rebuildRefs(';
+			echo "'#ref_rebuild');$(this).val('".$GLOBALS['lang']['loading']."');";
+			echo '"';
+			echo 'value="'.$GLOBALS['lang']['rebuild'].'" style="margin: 0;width: 100px;" /></td></tr>';
+		]]></hook>
+	</hooks>
+
+	<uninstall>
+		<![CDATA[
+			global $rlDb;
+
+			$field_id = $rlDb -> getOne('ID', "`Key` ='ref_number'", 'listing_fields');
+
+			$sql = "ALTER TABLE `".RL_DBPREFIX."listings` DROP `ref_number`";
+			$rlDb -> query( $sql );
+		
+			$sql = "DELETE FROM `".RL_DBPREFIX."listing_fields` WHERE `Key` = 'ref_number'";
+			$rlDb -> query( $sql );
+		
+			$sql ="DELETE FROM `".RL_DBPREFIX."listing_relations` WHERE `Position` = '0' AND `Fields` = '".$field_id."'";
+			$rlDb->query( $sql );
+
+			$GLOBALS['rlCache'] -> updateSubmitForms();
+		]]>
+	</uninstall>
+</plugin>

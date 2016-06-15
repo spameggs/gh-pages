@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="googleCheckout">
+	<title>Google Checkout</title>
+	<description>Google Checkout Payment Gateway</description>
+	<author>John Freeman</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>2.0.0</version>
+	<date>02.10.2012</date>
+	<files>
+		<file>controllers/pre.gateway.php</file>
+		<file>controllers/post.gateway.php</file>
+        <file>static/googleCheckout.png</file>
+        <file>icon.tpl</file>
+	</files>
+	<hooks>
+		<hook name="paymentGateway"><![CDATA[
+			global $config;
+				
+			if ( $config['googleCheckout_module'] && $config['googleCheckout_currency'] && $config['googleCheckout_merchant_id'] )
+			{
+            	$GLOBALS['rlSmarty'] -> display(RL_ROOT . 'plugins' . RL_DS . 'googleCheckout' . RL_DS . 'icon.tpl');
+			}
+		]]></hook>
+	</hooks>
+    <phrases>
+		<phrase key="googleCheckout_button_title" module="frontEnd"><![CDATA[Pay with Google Checkout]]></phrase>
+		<phrase key="googleCheckout_order_description" module="frontEnd"><![CDATA[{domain} invoice]]></phrase>
+		<phrase key="googleCheckout_order_page_notice" module="frontEnd"><![CDATA[Please follow the link below to complete your purchase:]]></phrase>
+    </phrases>
+	<config key="googleCheckout_divider" name="Google Checkout Payment Gateway" type="divider" group="6"><![CDATA[]]></config>
+	<config key="googleCheckout_module" name="Google Checkout module" type="bool" group="6"><![CDATA[1]]></config>	
+	<config key="googleCheckout_test_mode" name="Test mode" type="bool" group="6"><![CDATA[0]]></config>
+	<config key="googleCheckout_currency" name="Currency" type="text" group="6"><![CDATA[USD]]></config>
+	<config key="googleCheckout_merchant_id" name="Merchant ID" type="text" group="6"><![CDATA[]]></config>
+</plugin>

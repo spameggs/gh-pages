@@ -1,0 +1,428 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="fieldBoundBoxes">
+	<title>Field-bound Boxes</title>
+	<description>Allows you to create boxes to display listings based on a particular field</description>
+	<author>Mike Fletcher</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>1.1.3</version>
+	<date>16.01.2011</date>
+	<controller>field_bound_boxes</controller>
+
+	<files>
+		<file>listings_by_field.inc.php</file>
+		<file>listings_by_field.tpl</file>
+		<file>field-bound_box.tpl</file>
+		<file>rlFieldBoundBoxes.class.php</file>
+		<file>admin/field_bound_boxes.tpl</file>
+		<file>admin/field_bound_boxes.inc.php</file>
+	</files>
+	
+	<install><![CDATA[
+		$sql ="CREATE TABLE `".RL_DBPREFIX."field_bound_boxes` (
+			`ID` INT NOT NULL AUTO_INCREMENT,
+			`Key` VARCHAR( 255 ) NOT NULL,
+			`Field_key` VARCHAR( 255 ) NOT NULL,
+			`Path` VARCHAR( 255 ) NOT NULL,
+			`Columns` INT( 2 ) NOT NULL,
+			`Page_columns` INT( 2 ) NOT NULL,
+			`Show_count` ENUM('0','1') NOT NULL DEFAULT '0',
+			`Postfix` ENUM('0','1') NOT NULL DEFAULT '0',
+			`Listing_type` VARCHAR( 255 ) NOT NULL,
+			`Icons` ENUM('0','1') NOT NULL DEFAULT '0',
+			`Icons_position` ENUM('left','right','top','bottom') NOT NULL DEFAULT 'top',
+			`Icons_width` INT(5) NOT NULL DEFAULT '0',
+			`Icons_height` INT(5) NOT NULL DEFAULT '0',
+			`Show_empty` ENUM('0','1') NOT NULL DEFAULT '1',
+			`Status` ENUM('active','approval') NOT NULL default 'active',	
+			PRIMARY KEY ( `ID` )
+			) ENGINE = MYISAM CHARACTER SET utf8 COLLATE utf8_general_ci;";
+			$GLOBALS['rlDb'] -> query($sql);
+
+		$sql ="CREATE TABLE `".RL_DBPREFIX."field_bound_items` (
+			`ID` INT(11) NOT NULL AUTO_INCREMENT,
+			`Box_ID` INT(11) NOT NULL DEFAULT '0',
+			`Position` INT(5) NOT NULL DEFAULT '0',
+			`Key` VARCHAR(100) CHARACTER SET utf8 NOT NULL DEFAULT '',
+			`pName` VARCHAR(255) CHARACTER SET utf8 NOT NULL DEFAULT '',
+			`Count` INT(5) NOT NULL DEFAULT 0,
+			`Icon` VARCHAR(255) CHARACTER SET utf8 NOT NULL DEFAULT '',
+			`Status` ENUM('active','approval','trash') NOT NULL DEFAULT 'active',
+			PRIMARY KEY (`ID`)
+			) ENGINE = MYISAM CHARACTER SET utf8 COLLATE utf8_general_ci;";
+		$GLOBALS['rlDb'] -> query($sql);			
+	]]>
+	</install>
+
+	<hooks>
+		<hook name="tplHeader"><![CDATA[
+			echo '<link href="'.RL_PLUGINS_URL.'fieldBoundBoxes/static/style.css" type="text/css" rel="stylesheet" />';
+		]]></hook>
+		<hook name="seoBase" version="1.1.0"><![CDATA[
+			global $rlDb;
+			if( $rlDb -> getOne("Key", "`Path` = '".$_GET['page']."'", "field_bound_boxes") )
+			{
+				$tmp_get_vars = $_GET['rlVareables'];
+				
+				$_GET['rlVareables'] = $_GET['page'];
+				$_GET['rlVareables'] .= $tmp_get_vars ? "/".$tmp_get_vars : '';
+
+				if ( !empty($_GET['rlVareables']) )
+				{
+					$items = explode( '/', trim($_GET['rlVareables'], '/') );
+					$count_vars = count($items);
+
+					for ($i = 0; $i < $count_vars; $i++)
+					{
+						$step = $i + 1;
+						$_GET['nvar_'.$step] = $items[$i];
+					}
+					unset($tmp_get_vars);
+				}
+
+				$_GET['page'] = $GLOBALS['rlNavigator'] -> cPage = 'listings-by-field';
+			}
+			]]></hook>
+		<hook name="cronAdditional"><![CDATA[
+			$GLOBALS['reefless'] -> loadClass('FieldBoundBoxes', null, 'fieldBoundBoxes');
+			$GLOBALS['rlFieldBoundBoxes'] -> recount();
+			]]></hook>
+		<hook name="apPhpControlsBottom"><![CDATA[
+			$GLOBALS['reefless'] -> loadClass('FieldBoundBoxes',null, 'fieldBoundBoxes');
+			$GLOBALS['rlXajax'] -> registerFunction( array( 'recountBoxes', $GLOBALS['rlFieldBoundBoxes'], 'ajaxRecount' ) );
+			]]></hook>
+		<hook name="apTplControlsForm"><![CDATA[
+			echo '<tr class="body"><td class="list_td_light">'.$GLOBALS['lang']['fb_recount_text'].'</td>';
+			echo '<td class="list_td_light" align="center" style="width: 200px;">';
+			echo '<input id="boxes_recount" type="button" onclick="xajax_recountBoxes(';
+			echo "'#boxes_recount');$(this).val('".$GLOBALS['lang']['loading']."');";
+			echo '"';
+			echo 'value="'.$GLOBALS['lang']['recount'].'" style="margin: 0;width: 100px;" /></td></tr>';
+			]]></hook>
+		<hook name="apExtDataFormatsUpdate"><![CDATA[
+			$item_info = $GLOBALS['rlDb'] -> fetch(array('Key', 'Parent_ID'), array("ID" => $GLOBALS['id']), null, null, 'data_formats', 'row');
+
+			if($GLOBALS['field'] == 'Status' && $item_info['Parent_ID'])
+			{
+				$GLOBALS['rlDb'] -> query("UPDATE `".RL_DBPREFIX."field_bound_items` SET `Status` ='".$GLOBALS['value']."' WHERE `Key` = '".$item_info['Key']."'");
+				$GLOBALS['reefless'] -> loadClass('FieldBoundBoxes',null,'fieldBoundBoxes');
+				$GLOBALS['rlFieldBoundBoxes'] -> updateBoxContent();
+			}
+			elseif($GLOBALS['field'] == 'Status' && !$item_info['Parent_ID'])
+			{
+				$fields = $GLOBALS['rlDb'] -> fetch(array('Key'), array("Condition" => $item_info['Key']), null, null, 'listing_fields');
+				foreach( $fields as $fk => $field )
+				{
+					$sql = "SELECT GROUP_CONCAT(`Key`) as `keys` FROM `".RL_DBPREFIX."field_bound_boxes` WHERE `Field_key` = '{$field['Key']}'";
+					$box_keys = $GLOBALS['rlDb'] -> getRow($sql);
+					$GLOBALS['rlDb'] -> query("UPDATE `".RL_DBPREFIX."field_bound_boxes` SET `Status` ='{$GLOBALS['value']}' WHERE FIND_IN_SET(`Key`, '{$box_keys['keys']}')");
+					$GLOBALS['rlDb'] -> query("UPDATE `".RL_DBPREFIX."blocks` SET `Status` ='{$GLOBALS['value']}' WHERE FIND_IN_SET(`Key`, '{$box_keys['keys']}')");
+				}
+			}
+			]]></hook>
+		<hook name="apPhpListingsAjaxDeleteListing" version="1.0.2"><![CDATA[
+			if($GLOBALS['listing']['Status'] != 'pending')
+			{
+				$GLOBALS['reefless'] -> loadClass('FieldBoundBoxes',null,'fieldBoundBoxes');
+				$GLOBALS['rlFieldBoundBoxes'] -> decreaseRelatedItems($GLOBALS['listing']['ID']);
+			}
+			]]></hook>
+		<hook name="phpListingsAjaxDeleteListing" version="1.0.2"><![CDATA[
+			if( $GLOBALS['info']['Status'] != 'pending' )
+			{
+				$GLOBALS['reefless'] -> loadClass('FieldBoundBoxes',null,'fieldBoundBoxes');
+				$GLOBALS['rlFieldBoundBoxes'] -> decreaseRelatedItems($GLOBALS['info']['ID']);
+			}
+		]]></hook>
+		<hook name="apPhpListingsAfterAdd"><![CDATA[
+			$GLOBALS['reefless'] -> loadClass('FieldBoundBoxes',null,'fieldBoundBoxes');
+			$GLOBALS['rlFieldBoundBoxes'] -> increaseRelatedItems($GLOBALS['listing_id']);
+			]]></hook>
+		<hook name="apExtListingsUpdate"><![CDATA[
+			if($GLOBALS['field'] == 'Status')
+			{
+				$GLOBALS['reefless'] -> loadClass('FieldBoundBoxes',null,'fieldBoundBoxes');
+				if ( $GLOBALS['value'] == 'active' && $GLOBALS['listing_info']['Status'] != 'active' )
+				{
+					$GLOBALS['rlFieldBoundBoxes'] -> increaseRelatedItems($GLOBALS['id']);
+				}else if ( $GLOBALS['value'] != 'active' && $GLOBALS['listing_info']['Status'] == 'active' )		
+				{
+					$GLOBALS['rlFieldBoundBoxes'] -> decreaseRelatedItems($GLOBALS['id']);
+				}
+			}
+		]]></hook>
+		<hook name="afterListingDone"><![CDATA[
+		if( $GLOBALS['update_status']['fields']['Status']  == 'active' )
+		{
+			$GLOBALS['reefless'] -> loadClass('FieldBoundBoxes',null,'fieldBoundBoxes');
+			$GLOBALS['rlFieldBoundBoxes'] -> increaseRelatedItems($GLOBALS['listing_id']);
+		}
+		]]></hook>
+		<hook name="phpListingsUpgradeListing"><![CDATA[
+			if($GLOBALS['listing_info']['Status'] != 'active')
+			{
+				$GLOBALS['reefless'] -> loadClass('FieldBoundBoxes',null,'fieldBoundBoxes');
+
+				$cur_status = $GLOBALS['rlDb'] -> getOne("Status", "`ID` = '".$GLOBALS['listing_id']."'", "listings");
+				
+				if ( $cur_status == 'active' )
+				{
+					$GLOBALS['rlFieldBoundBoxes'] -> increaseRelatedItems($GLOBALS['listing_id']);
+				}
+			}
+		]]></hook>		
+		<hook name="apPhpFormatsAjaxDeleteItem"><![CDATA[
+			$sql = "SELECT `T1`.`ID`, `T1`.`Key` FROM `".RL_DBPREFIX."field_bound_boxes` AS `T1` ";
+			$sql .="JOIN `".RL_DBPREFIX."field_bound_items` AS `T2` ON `T2`.`Box_ID` = `T1`.`ID` ";
+			$sql .="WHERE `T2`.`Key` = '{$GLOBALS['key']}'";
+			$boxes = $GLOBALS['rlDb'] -> getAll($sql);
+
+			$GLOBALS['rlDb'] -> query("DELETE FROM `".RL_DBPREFIX."field_bound_items` WHERE `Key` = '{$GLOBALS['key']}'");
+			$GLOBALS['reefless'] -> loadClass('FieldBoundBoxes',null,'fieldBoundBoxes');
+			$GLOBALS['rlFieldBoundBoxes'] -> updateBoxContent($boxes);
+			]]></hook>
+		<hook name="apPhpFormatsAjaxAddItem"><![CDATA[
+			$sql = "SELECT `T1`.`ID`, `T1`.`Key` FROM `".RL_DBPREFIX."field_bound_boxes` AS `T1` ";
+			$sql .="JOIN `".RL_DBPREFIX."listing_fields` AS `T2` ON `T2`.`Key` = `T1`.`Field_key` ";
+			$sql .="JOIN `".RL_DBPREFIX."data_formats` AS `T3` ON `T3`.`Key` = `T2`.`Condition` ";
+			$sql .="WHERE `T3`.`ID` = ".$GLOBALS['insert']['Parent_ID'];
+			$boxes = $GLOBALS['rlDb'] -> getAll($sql);
+
+			foreach($boxes as $bk => $box)
+			{
+				$fb_insert['Key'] = $GLOBALS['insert']['Key'];
+				$fb_insert['pName'] = 'data_formats+name+'.$GLOBALS['insert']['Key'];
+				$fb_insert['Box_ID'] = $box['ID'];
+				$fb_insert['Position'] = ((int) $GLOBALS['rlDb'] -> getOne("Position", "`Box_ID` = ".$box['ID']." ORDER BY `Position` DESC", 'field_bound_items' )) + 1;
+				$fb_insert['Status'] = $GLOBALS['insert']['Status'];
+
+				$GLOBALS['rlActions'] -> insertOne($fb_insert, 'field_bound_items');
+			}
+			
+			$GLOBALS['reefless'] -> loadClass('FieldBoundBoxes',null,'fieldBoundBoxes');
+			$GLOBALS['rlFieldBoundBoxes'] -> updateBoxContent(null, null, $boxes);
+			]]></hook>
+
+		<hook name="apPhpFormatsAjaxEditItem"><![CDATA[			
+			$fb_update = $GLOBALS['update'];
+			unset($fb_update['fields']['Default']);
+			$GLOBALS['rlActions'] -> updateOne($fb_update, 'field_bound_items');
+			$GLOBALS['reefless'] -> loadClass('FieldBoundBoxes',null,'fieldBoundBoxes');
+			$GLOBALS['rlFieldBoundBoxes'] -> updateBoxContent();
+			]]></hook>
+
+		<hook versio="1.0.2" name="apPhpListingFieldsAfterEdit"><![CDATA[
+			if( $GLOBALS['f_type'] == 'select' )
+			{
+				global $rlDb, $f_data;
+
+				if( !$f_data['data_format'] )
+				{
+					$sql = "SELECT `ID`, `Key`, `Field_key` FROM `".RL_DBPREFIX."field_bound_boxes` WHERE `Field_key` = '{$f_data['key']}'";
+					$boxes = $rlDb -> getAll( $sql );
+
+					foreach( $boxes as $bk => $box )
+					{
+						$sql ="DELETE FROM `".RL_DBPREFIX."field_bound_items` WHERE NOT FIND_IN_SET(REPLACE(`Key`, '".$box['Field_key']."_',''), '".implode(",", array_keys($f_data['items']))."') AND `Box_ID` = ".$box['ID'];
+						$rlDb -> query($sql);
+
+						$sql ="SELECT GROUP_CONCAT(REPLACE(`Key`,'".$box['Field_key']."_','')) as `items` FROM `".RL_DBPREFIX."field_bound_items` ";
+						$sql .="WHERE `Box_ID` = ".$box['ID'];
+						$fb_items = $rlDb -> getRow($sql);							
+
+						$ak = 0;
+						foreach($f_data['items'] as $key => $value)
+						{
+							if( !in_array($key, explode(',', $fb_items['items'])) )
+							{
+								$fb_insert[$ak]['Key'] = $box['Field_key']."_".$key;
+								$fb_insert[$ak]['pName'] = 'listing_fields+name+'.$fb_insert[$ak]['Key'];
+								$fb_insert[$ak]['Box_ID'] = $box['ID'];
+								$fb_insert[$ak]['Position'] = ((int) $GLOBALS['rlDb'] -> getOne("Position", "`Box_ID` = ".$box['ID']." ORDER BY `Position` DESC", 'field_bound_items' )) + 1;
+								$fb_insert[$ak]['Status'] = 'active';
+								$ak++;
+							}
+						}
+						if( $fb_insert )
+						{
+							$GLOBALS['rlActions'] -> insert($fb_insert, 'field_bound_items');
+						}
+					}
+				}
+			}
+			]]></hook>
+		<hook name="apPhpListingsAfterEdit"><![CDATA[
+			global $listing, $data, $rlDb, $info;
+
+			$GLOBALS['reefless'] -> loadClass('FieldBoundBoxes', null, 'fieldBoundBoxes');
+			if ( $info['Status'] == 'active' && $listing['Status'] != 'active' )
+			{
+				$GLOBALS['rlFieldBoundBoxes'] -> increaseRelatedItems($listing['ID']);
+			}else if ( $info['Status'] != 'active' && $listing['Status'] == 'active' )		
+			{
+				$GLOBALS['rlFieldBoundBoxes'] -> increaseRelatedItems($listing['ID']);
+			}else
+			{
+				$fields = $GLOBALS['rlFieldBoundBoxes'] -> getBoxesListingFields( $listing['Category_ID'] );
+
+				$sql ="SELECT `Key` FROM `".RL_DBPREFIX."listing_fields` WHERE FIND_IN_SET(`ID`, '".implode(',', $fields)."') ";
+				$fields = $rlDb -> getAll($sql);
+
+				foreach( $fields as $fk => $field )
+				{
+					if( $data[ $field['Key'] ] != $listing[ $field['Key'] ] )
+					{
+						$diff[ $field['Key'] ]['old'] = $listing[ $field['Key'] ];
+						$diff[ $field['Key'] ]['new'] = $data[ $field['Key'] ];
+					}
+	
+					if( $diff )
+					{
+						$GLOBALS['rlFieldBoundBoxes'] -> editListing( $listing_id, $listing['Listing_type'], $diff );
+					}
+				}
+			}
+			]]></hook>
+		<hook name="afterListingEdit"><![CDATA[
+			global $listing, $data, $rlDb;
+
+			$GLOBALS['reefless'] -> loadClass('FieldBoundBoxes', null, 'fieldBoundBoxes');
+			$fields = $GLOBALS['rlFieldBoundBoxes'] -> getBoxesListingFields( $listing['Category_ID'] );
+
+			$sql ="SELECT `Key` FROM `".RL_DBPREFIX."listing_fields` WHERE FIND_IN_SET(`ID`, '".implode(',', $fields)."') ";
+			$fields = $rlDb -> getAll($sql);
+
+			foreach( $fields as $fk => $field )
+			{
+				if( $data[ $field['Key'] ] != $listing[ $field['Key'] ] )
+				{
+					$diff[ $field['Key'] ]['old'] = $listing[$field['Key'] ];
+					$diff[ $field['Key'] ]['new'] = $data[$field['Key'] ];
+				}
+
+				if( $diff )
+				{
+					$GLOBALS['rlFieldBoundBoxes'] -> editListing( $listing_id, $listing['Listing_type'], $diff );
+				}
+			}
+			]]></hook>
+
+		<hook name="apPhpFieldsAjaxDeleteField"><![CDATA[
+			global $rlDb;
+
+			if( $GLOBALS['field']['Type'] == 'select' )
+			{
+				$boxes = $rlDb -> fetch(array('Key', 'ID'), array('Field_key' => $GLOBALS['field']['Key']), null, null, 'field_bound_boxes');
+				if( $boxes )
+				{
+					foreach($boxes as $bk => $box)
+					{
+						$lang_keys[] = array(
+							'Key' => 'blocks+name+' . $box['Key']
+						);
+		
+						$GLOBALS['rlActions'] -> delete( array( 'Key' => $box['Key'] ), array('field_bound_boxes'), NULL, 1, $box['Key']);
+						$GLOBALS['rlActions'] -> delete( array( 'Key' => $box['Key'] ), array('blocks', 'lang_keys'), NULL, 1, $box['Key'], $lang_keys );
+
+						/* delete item */
+						$rlDb -> query("DELETE FROM `".RL_DBPREFIX."field_bound_items` WHERE `Box_ID` = '".$box['ID']."'");
+
+						$GLOBALS['reefless'] -> deleteDirectory( RL_FILES."fieldBoundBoxes".RL_DS.$box['Key'] );
+					}
+				}
+			}
+		]]></hook>
+		<hook name="apPhpFormatsAjaxDeleteFormat"><![CDATA[
+			global $rlDb;
+			
+			$sql ="SELECT `T1`.`Key`, `T1`.`ID` FROM `".RL_DBPREFIX."field_bound_boxes` AS `T1` ";
+			$sql .="LEFT JOIN `".RL_DBPREFIX."listing_fields` AS `T2` ON `T2`.`Key` = `T1`.`Field_key` ";
+			$sql .="WHERE `T2`.`Condition` = '{$GLOBALS['key']}'";
+
+			$boxes = $rlDb -> getAll($sql);
+
+			if( $boxes )
+			{
+				foreach($boxes as $bk => $box)
+				{
+					$lang_keys[] = array(
+						'Key' => 'blocks+name+' . $box['Key']
+					);
+	
+					$GLOBALS['rlActions'] -> delete( array( 'Key' => $box['Key'] ), array('field_bound_boxes'), NULL, 1, $box['Key']);
+					$GLOBALS['rlActions'] -> delete( array( 'Key' => $box['Key'] ), array('blocks', 'lang_keys'), NULL, 1, $box['Key'], $lang_keys );
+					/* delete item */
+					$rlDb -> query("DELETE FROM `".RL_DBPREFIX."field_bound_items` WHERE `Box_ID` = '".$box['ID']."'");
+					$GLOBALS['reefless'] -> deleteDirectory( RL_FILES."fieldBoundBoxes".RL_DS.$box['Key'] );
+				}
+			}
+			]]></hook>
+		
+		<hook name="apExtListingFieldsUpdate"><![CDATA[
+			$field_info = $GLOBALS['rlDb'] -> fetch( array('Type', 'Key'), array('ID' => $GLOBALS['id']), null, null, 'listing_fields', 'row' );
+			if( $GLOBALS['field'] == 'Status' && $field_info['Type'] == 'select')
+			{
+				$sql ="SELECT GROUP_CONCAT(`T1`.`Key`) as `keys` FROM `".RL_DBPREFIX."field_bound_boxes` AS `T1` ";
+				$sql .="JOIN `".RL_DBPREFIX."listing_fields` AS `T2` ON `T2`.`Key` = `T1`.`Field_key` ";
+				$sql .="WHERE `T2`.`ID` = '{$GLOBALS['id']}'";
+	
+				$box_keys = $GLOBALS['rlDb'] -> getRow($sql);
+				$GLOBALS['rlDb'] -> query("UPDATE `".RL_DBPREFIX."field_bound_boxes` SET `Status` ='{$GLOBALS['value']}' WHERE FIND_IN_SET(`Key`, '{$box_keys['keys']}')");
+				$GLOBALS['rlDb'] -> query("UPDATE `".RL_DBPREFIX."blocks` SET `Status` ='{$GLOBALS['value']}' WHERE FIND_IN_SET(`Key`, '{$box_keys['keys']}')");
+			}
+			]]></hook>
+	</hooks>
+
+	<phrases>
+		<phrase key="ext_field_bound_manager" module="ext"><![CDATA[Field-bound Boxes Manager]]></phrase>
+		<phrase key="ext_field_bound_items_manager" module="ext"><![CDATA[Field-bound Boxes Manager]]></phrase>
+		<phrase key="fb_block_name" module="admin"><![CDATA[Box name]]></phrase>
+		<phrase key="fb_field" module="admin"><![CDATA[Related field]]></phrase>
+		<phrase key="fb_add" module="admin"><![CDATA[Add box]]></phrase>
+		<phrase key="fb_edit" module="admin"><![CDATA[Edit box]]></phrase>
+		<phrase key="fb_boxes_list" module="admin"><![CDATA[Boxes list]]></phrase>
+		<phrase version="1.0.1" key="fb_cols" module="admin"><![CDATA[Columns number in box]]></phrase>
+		<phrase key="fb_item_icon" module="admin"><![CDATA[Icon]]></phrase>
+		<phrase key="fb_enable_icons" module="admin"><![CDATA[Use icons in the box]]></phrase>
+		<phrase key="fb_icons_position" module="admin"><![CDATA[Icons position]]></phrase>
+		<phrase key="fb_icons_sizes_hint" module="admin"><![CDATA[Leave empty width and height if you don't want to resize icons]]></phrase>
+		<phrase key="fb_icon_deleted" module="admin"><![CDATA[Icon has been successfully deleted]]></phrase>
+		<phrase key="fb_listings_count" module="admin"><![CDATA[Show listings counter]]></phrase>
+		<phrase key="fb_html_postfix" module="admin"><![CDATA[Enable .html at the end of urls]]></phrase>
+		<phrase key="fb_notice_path_exist" module="admin"><![CDATA[Item with the same path already exists]]></phrase>
+		<phrase key="fb_box_path" module="admin"><![CDATA[Box items path]]></phrase>
+		<phrase key="fb_option_key" module="admin"><![CDATA[option_key]]></phrase>
+		<phrase key="fb_items_list" module="admin"><![CDATA[Items list]]></phrase>
+		<phrase key="fb_recount_text" module="admin"><![CDATA[Recount field-bound boxes]]></phrase>
+		<phrase key="fb_listings_recounted" module="admin"><![CDATA[Field-bound boxes have been recounted]]></phrase>
+		<phrase key="fb_regenerate_path_desc" module="admin"><![CDATA[Leave the field empty to automatically generate the url.]]></phrase>
+		<phrase key="fb_settings" module="admin"><![CDATA[Settings]]></phrase>
+		<phrase key="fb_icon_added" module="admin"><![CDATA[Icon added]]></phrase>
+		<phrase key="fb_current_icon" module="admin"><![CDATA[Current icon]]></phrase>
+		<phrase key="fb_manage_icon" module="admin"><![CDATA[Manage Icon]]></phrase>
+		<phrase version="1.0.1" key="fb_page_cols" module="admin"><![CDATA[Columns number on page]]></phrase>		
+		<phrase version="1.0.3" key="fb_rebuild_box_items" module="admin"><![CDATA[Rebuild items]]></phrase>
+		<phrase version="1.0.2" key="fb_items_recopied" module="admin"><![CDATA[Items copied from field values]]></phrase>
+		<phrase version="1.1.0" key="fb_show_empty" module="admin"><![CDATA[Show empty items]]></phrase>
+	</phrases>
+
+	<pages>
+		<page key="listings_by_field" readonly="1" name="Listings" type="system" path="listings-by-field" get="" controller="listings_by_field" login="0" menus="" tpl="1"><![CDATA[]]></page>
+	</pages>
+
+	<uninstall><![CDATA[
+		$sql ="DELETE `T1`,`T2` FROM `".RL_DBPREFIX."field_bound_boxes` AS `T1` ";
+		$sql .="JOIN `".RL_DBPREFIX."blocks` AS `T2` ON `T2`.`Key` = `T1`.`Key` ";
+		$sql .="WHERE 1";
+
+		$GLOBALS['rlDb'] -> query( $sql );
+
+		$sql ="DROP TABLE `".RL_DBPREFIX."field_bound_boxes`";
+		$GLOBALS['rlDb'] -> query( $sql );
+
+		$sql ="DROP TABLE `".RL_DBPREFIX."field_bound_items`";
+		$GLOBALS['rlDb'] -> query( $sql );
+
+		$GLOBALS['reefless'] -> deleteDirectory( RL_FILES."fieldBoundBoxes" );
+	]]>
+	</uninstall>
+</plugin>

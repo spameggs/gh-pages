@@ -1,0 +1,78 @@
+/* listing rating plugin css */
+
+li#listing_rating_dom
+{
+	padding: 15px 0 0;
+}
+ul.lising_rating_ul
+{
+	padding: 0 0 3px;
+}
+ul.listing_rating_available li
+{
+	cursor: pointer;
+}
+ul.lising_rating_ul li
+{
+	width: 21px;
+	height: 21px;
+	display: inline-block;
+	*display: inline;
+	*zoom: 1;
+	background: url('stars.png') -20px -42px no-repeat;
+	padding: 0!important;
+	position: relative;
+	text-align: left;
+}
+ul.lising_rating_ul li.active
+{
+	background-position: -20px -21px;
+}
+ul.lising_rating_ul li.hover
+{
+	background-position: -20px 0;
+}
+ul.lising_rating_ul li div
+{
+	height: 100%;
+	background: url('stars.png') -20px -21px no-repeat;
+	display: inline-block;
+	*display: inline;
+	*zoom: 1;
+}
+ul.lising_rating,
+ul.lising_rating_rtl
+{
+	display: inline-block;
+	*display: inline;
+	*zoom: 1;
+	padding: 0 5px 0 0;
+}
+ul.lising_rating_rtl
+{
+	padding: 0 0 0 5px;
+}
+ul.lising_rating li
+{
+	background: url('stars.png') 0 -18px no-repeat;
+	width: 17px;
+	height: 17px;
+	display: inline-block;
+	*display: inline;
+	*zoom: 1;
+	position: relative;
+	vertical-align: middle;
+	text-align: left;
+}
+ul.lising_rating li.active
+{
+	background-position: 0 -1px;
+}
+ul.lising_rating li div
+{
+	height: 100%;
+	background: url('stars.png') 0 -1px no-repeat;
+	display: inline-block;
+	*display: inline;
+	*zoom: 1;
+}

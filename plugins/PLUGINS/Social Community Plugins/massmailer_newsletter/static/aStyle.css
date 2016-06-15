@@ -1,0 +1,92 @@
+/* massmailer admin panel styles */
+
+table.massmailer td.name
+{
+	width: 90px;
+	font-size: 12px;
+	padding: 0 5px 3px 0;
+}
+table.massmailer td.value
+{
+	padding: 0 5px 3px 0;
+}
+table.massmailer td.value > label
+{
+	font-size: 12px;
+}
+
+div.progress
+{
+	margin-top: 5px;
+	padding: 1px;
+	height: 16px;
+	border: 1px solid #c3cddc;
+	background: white;
+}
+div.progress > div
+{
+	width: 0px;
+	height: 16px;
+	background: url('gallery.png') 0 0 repeat-x;
+}
+td.counter
+{
+	width: 35px;
+	text-align: right;
+	font-size: 12px;
+}
+
+a.button_bar span.center_recepeints
+{
+	padding: 0px 7px 0 25px;
+	background: url('gallery.png') 1px -21px no-repeat;
+}
+
+span#sending
+{
+	text-transform: capitalize;
+}
+
+table.mn_list
+{
+	width: 100%;
+}
+table.mn_list td.name
+{
+	padding: 6px 15px 6px 0;
+	vertical-align: top;
+}
+
+table.mn_list td.value
+{
+	padding: 6px 0;
+	vertical-align: top;
+}
+div.mn_area
+{
+	background: #f6f6f6;
+	border-radius: 5px;
+	box-shadow: inset 0 0 7px rgba(0,0,0,0.1);
+	padding: 10px;
+}
+
+div.mn_padding
+{
+	padding: 0 0 5px 0;
+}
+div.mn_padding ul
+{
+	padding: 0 0 0 10px;
+	font-weight: bold;
+}
+
+img.send
+{
+	margin: 0px 2px;
+	cursor: pointer;
+	width: 22px;
+	height: 15px;
+	background: url('gallery.png') 0 -45px no-repeat;
+}
+
+/* massmailer admin panel styles end */

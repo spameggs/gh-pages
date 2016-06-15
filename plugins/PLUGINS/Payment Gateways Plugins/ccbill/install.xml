@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="ccbill">
+	<title>CCBill</title>
+	<description>CCBill payment gateway</description>
+	<author>Vladimir</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>2.0.0</version>
+	<date>14.06.2012</date>
+
+	<files>
+		<file>admin/apPhpListingPlansBeforeAdd.php</file>
+		<file>admin/apPhpListingPlansBeforeEdit.php</file>
+		<file>admin/apPhpListingPlansPost.php</file>
+		<file>admin/apTplListingPlansForm.tpl</file>
+		<file>controllers/pre.gateway.php</file>
+		<file>controllers/post.gateway.php</file>
+		<file>ccbill_payment_block.tpl</file>
+		<file>addListingTop.php</file>
+		<file>specialBlock.php</file>
+	</files>
+
+	<install>
+		<![CDATA[
+			global $rlDb;
+
+			$sql = "ALTER TABLE `".RL_DBPREFIX."listing_plans` ADD `ccbill_allowedTypes` VARCHAR( 255 ) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL";
+			$rlDb -> query( $sql );
+		]]>
+	</install>
+
+	<hooks>
+		<hook name="paymentGateway">
+			<![CDATA[
+				global $page_info;
+
+				if ($GLOBALS['config']['ccbill_module'])   
+				{
+                	$GLOBALS['rlSmarty'] -> display( RL_ROOT . 'plugins' . RL_DS . 'ccbill' . RL_DS . 'ccbill_payment_block.tpl' );
+				}
+			]]>
+		</hook>
+		<hook name="apTplListingPlansForm">
+			<![CDATA[
+				if ($GLOBALS['config']['ccbill_module'])   
+				{
+                	$GLOBALS['rlSmarty'] -> display( RL_ROOT . 'plugins' . RL_DS . 'ccbill' . RL_DS . 'admin' . RL_DS . 'apTplListingPlansForm.tpl' );
+				}
+			]]>
+		</hook>
+		<hook name="apPhpListingPlansBeforeAdd">
+			<![CDATA[
+				if ($GLOBALS['config']['ccbill_module'])   
+				{
+					require_once(RL_PLUGINS .'ccbill'. RL_DS . 'admin' . RL_DS . 'apPhpListingPlansBeforeAdd.php');
+				}
+			]]>
+		</hook>
+		<hook name="apPhpListingPlansBeforeEdit">
+			<![CDATA[
+				if ($GLOBALS['config']['ccbill_module'])   
+				{
+					require_once(RL_PLUGINS .'ccbill'. RL_DS . 'admin' . RL_DS . 'apPhpListingPlansBeforeEdit.php');
+				}
+			]]>
+		</hook>
+		<hook name="apPhpListingPlansPost">
+			<![CDATA[
+				if ($GLOBALS['config']['ccbill_module'])   
+				{
+					require_once(RL_PLUGINS .'ccbill'. RL_DS . 'admin' . RL_DS . 'apPhpListingPlansPost.php');
+				}
+			]]>
+		</hook>
+		<hook name="addListingTop">
+			<![CDATA[ 
+				require_once(RL_PLUGINS .'ccbill'. RL_DS . 'addListingTop.php');
+			]]>
+		</hook>
+		<hook name="specialBlock">
+			<![CDATA[ 
+				require_once(RL_PLUGINS .'ccbill'. RL_DS . 'specialBlock.php');
+			]]>
+		</hook>
+	</hooks>
+
+	<phrases>
+		<phrase key="ccbill_allowed_yypes_name" module="admin"><![CDATA[CCBill Price ID]]></phrase>
+	</phrases>
+
+	<config key="ccbill_divider" name="CCBill payment gateway" type="divider" group="6"><![CDATA[]]></config>
+	<config key="ccbill_module" name="CCBill module" type="bool" group="6"><![CDATA[1]]></config>
+	<config key="ccbill_clientAccnum" name="Account ID" type="text" group="6"><![CDATA[]]></config>
+	<config key="ccbill_clientSubacc" name="Subsccount ID" type="text" group="6"><![CDATA[]]></config>
+	<config key="ccbill_formName" name="Form" type="text" group="6"><![CDATA[]]></config>
+	<config key="ccbill_language" name="Language" type="text" group="6"><![CDATA[English]]></config>	
+	<config key="ccbill_test_mode" name="Test mode" type="bool" group="6"><![CDATA[0]]></config>
+
+	<uninstall>
+		<![CDATA[
+			global $rlDb;
+
+			$sql = "ALTER TABLE `".RL_DBPREFIX."listing_plans` DROP `ccbill_allowedTypes`";
+			$rlDb -> query( $sql );
+		]]>
+	</uninstall>
+</plugin>

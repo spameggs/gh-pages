@@ -1,0 +1,3 @@
+Flynax plugin Booking system is an online booking system for your real estate classifieds web site. This plugin allows your users to book and rent apartments via Flynax booking system. Online Booking system will make it easy to book apartments online.
+
+Booking system plugin adds an additional block to the user interface as the tab of a listing details menu. When users open that tab they see booking statistics in the Legend section, price range in the Rate range and a calendar where they can choose available dates for booking that apartment. For convenient use there is a link with Booking requests in the left sidebar of the user interface users may find requests for booking. Let you users to use this Booking system at your Realty classifieds web site.

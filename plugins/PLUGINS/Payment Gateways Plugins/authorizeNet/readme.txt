@@ -1,0 +1,3 @@
+Integrated Flynax plugin Authorize.net is the payment gateway which can help you receive online payments by electronic checks and credit cards from your classifieds website’s members, It’s a great solution from fraud online payments for your classifieds web site powered by Flynax classifieds software.
+
+Authorise.net has more than 350000 customers who trust in its service. Using this plugin will allow you to get online payments quickly and secure. Authorize.net provides free email, chat and phone support.

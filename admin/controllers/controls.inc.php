@@ -1,0 +1,23 @@
+<?php
+$reefless->loadClass('Controls', 'admin');
+$rlXajax->registerFunction(array(
+    'recountListings',
+    $rlControls,
+    'ajaxRecountListings'
+));
+$rlXajax->registerFunction(array(
+    'rebuildCatLevels',
+    $rlControls,
+    'ajaxRebuildCatLevels'
+));
+$rlXajax->registerFunction(array(
+    'reorderFields',
+    $rlControls,
+    'ajaxReorderFields'
+));
+$rlXajax->registerFunction(array(
+    'updateCache',
+    $rlControls,
+    'ajaxUpdateCache'
+));
+$rlHook->load('apPhpControlsBottom');

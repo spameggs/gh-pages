@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="loanMortgageCalculator">
+	<title>Loan/Mortgage Calculator</title>
+	<description>Calculates loan/mortgage amount for listings</description>
+	<author>John Freeman</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>2.2.2</version>
+	<date>08.03.2012</date>
+	
+	<files>
+        <file>static/loan_calc.js</file>
+        <file>static/print.css</file>
+        <file>tab.tpl</file>
+        <file>row.tpl</file>
+        <file>print.inc.php</file>
+        <file>print.tpl</file>
+	</files>
+	
+	<install><![CDATA[
+	global $rlDb;
+	
+	$sql = "ALTER TABLE `".RL_DBPREFIX."listing_types` ADD `Loan_calc` ENUM( '0', '1' ) NOT NULL DEFAULT '1' AFTER `Status`";
+	$rlDb -> query($sql);
+	]]></install>
+	
+	<hooks>
+		<hook version="2.1.0" name="listingDetailsBottom"><![CDATA[
+			global $tabs, $lang, $config, $listing_type;
+
+			if ( $config['loanMortgageModule'] && $listing_type['Loan_calc'] )
+			{
+				$tabs['loanMortgage'] = array(
+					'key' => 'loanMortgage',
+					'name' => $lang['loanMortgage_tab_caption']
+				);
+			}
+		]]></hook>
+		
+		<hook version="2.1.0" name="listingDetailsBottomTpl">
+			<![CDATA[
+				global $rlSmarty, $config, $listing_type;
+				
+				if ( $config['loanMortgageModule'] && $listing_type['Loan_calc'] )
+				{
+					$rlSmarty -> display( RL_PLUGINS . 'loanMortgageCalculator' . RL_DS . 'tab.tpl' );
+				}
+			]]>
+		</hook>
+		
+		<hook version="2.1.0" name="listingDetailsTop">
+			<![CDATA[
+				global $rlSmarty, $listing_data, $config, $lang, $listing_type;
+				
+				if ( $listing_data[ $config['loanMortgage_price_field'] ] && $listing_type['Loan_calc'] )
+				{
+					$price = explode('|', $listing_data[ $config['loanMortgage_price_field'] ]);
+					$price[1] = $lang['data_formats+name+'.$price[1] ];
+					
+					$rlSmarty -> assign_by_ref('lm_amount', $price);
+				}
+			]]>
+		</hook>
+		
+		<hook version="2.1.0" name="apTplListingTypesForm"><![CDATA[
+			global $rlSmarty;
+			
+			$rlSmarty -> display( RL_PLUGINS . 'loanMortgageCalculator' . RL_DS . 'row.tpl' );
+		]]></hook>
+		
+		<hook version="2.1.0" name="apPhpListingTypesPost"><![CDATA[
+			global $type_info;
+			
+			$_POST['loan_calc'] = $type_info['Loan_calc'];
+		]]></hook>
+		
+		<hook version="2.1.0" name="apPhpListingTypesBeforeAdd"><![CDATA[
+			global $data;
+			
+			$data['Loan_calc'] = (int)$_POST['loan_calc'];
+		]]></hook>
+		
+		<hook version="2.1.0" name="apPhpListingTypesBeforeEdit"><![CDATA[
+			global $update_date;
+			
+			$update_date['fields']['Loan_calc'] = (int)$_POST['loan_calc'];
+		]]></hook>
+
+		<hook version="2.2.1" name="phpCompressionJsCssExceptions"><![CDATA[
+			$param3[] = 'loanMortgage_print';
+		]]></hook>
+	</hooks>
+	
+	<configs key="loanMortgage" name="Loan/Mortgage">
+		<![CDATA[]]>
+		<config key="loanMortgageModule" name="Loan/Mortgage module" type="bool"><![CDATA[1]]></config>
+		<config key="loanMortgage_price_field" name="Price field key" type="text"><![CDATA[price]]></config>
+		<config key="loanMortgage_loan_divider" name="Loan form settings" type="divider"><![CDATA[]]></config>
+		<config key="loanMortgage_loan_term_mode" name="Default loan term mode" type="select" values="Years,Months"><![CDATA[Years]]></config>
+		<config key="loanMortgage_loan_term" name="Default loan term" validate="int" description="years/months" type="text"><![CDATA[]]></config>
+		<config key="loanMortgage_loan_rate" name="Default loan iterest rate" validate="int" description="%" type="text"><![CDATA[]]></config>
+	</configs>
+	
+	<phrases>
+		<phrase key="loanMortgage_tab_caption" module="frontEnd"><![CDATA[Loan/Mortgage]]></phrase>
+		<phrase key="loanMortgage_switch" module="frontEnd"><![CDATA[Switch]]></phrase>
+		<phrase key="loanMortgage_calculate" module="frontEnd"><![CDATA[Calculate]]></phrase>
+		<phrase key="loanMortgage_reset" module="frontEnd"><![CDATA[Reset]]></phrase>
+		<phrase key="loanMortgage_loan_terms" module="frontEnd"><![CDATA[Loan Terms]]></phrase>
+		<phrase key="loanMortgage_loan_amount" module="frontEnd"><![CDATA[Loan Amount]]></phrase>
+		<phrase key="loanMortgage_loan_term" module="frontEnd"><![CDATA[Loan Term]]></phrase>
+		<phrase key="loanMortgage_years" module="frontEnd"><![CDATA[years]]></phrase>
+		<phrase key="loanMortgage_months" module="frontEnd"><![CDATA[months]]></phrase>
+		<phrase key="loanMortgage_interest_rate" module="frontEnd"><![CDATA[Interest Rate]]></phrase>
+		<phrase key="loanMortgage_first_pmt_date" module="frontEnd"><![CDATA[First Payment Date]]></phrase>
+		<phrase key="loanMortgage_payments" module="frontEnd"><![CDATA[Payments]]></phrase>
+		<phrase key="loanMortgage_start_message" module="frontEnd"><![CDATA[Fill in the form and click on "Calculate"]]></phrase>
+		<phrase key="loanMortgage_amz_schedule" module="frontEnd"><![CDATA[Amortization Schedule]]></phrase>
+		<phrase key="loanMortgage_num_payments" module="frontEnd"><![CDATA[Num Payments]]></phrase>
+		<phrase key="loanMortgage_monthly_payment" module="frontEnd"><![CDATA[Monthly Payment]]></phrase>
+		<phrase key="loanMortgage_total_paid" module="frontEnd"><![CDATA[Total Paid]]></phrase>
+		<phrase key="loanMortgage_total_interest" module="frontEnd"><![CDATA[Total Interest]]></phrase>
+		<phrase key="loanMortgage_payoff_date" module="frontEnd"><![CDATA[Payoff Date]]></phrase>
+		<phrase key="loanMortgage_pmt_date" module="frontEnd"><![CDATA[Pmt. Date]]></phrase>
+		<phrase key="loanMortgage_amount" module="frontEnd"><![CDATA[Amount]]></phrase>
+		<phrase key="loanMortgage_interest" module="frontEnd"><![CDATA[Interest]]></phrase>
+		<phrase key="loanMortgage_principal" module="frontEnd"><![CDATA[Principal]]></phrase>
+		<phrase key="loanMortgage_balance" module="frontEnd"><![CDATA[Balance]]></phrase>
+		<phrase key="loanMortgage_error_amount" module="frontEnd"><![CDATA[Please enter a valid loan amount.]]></phrase>
+		<phrase key="loanMortgage_error_term" module="frontEnd"><![CDATA[Please enter a valid loan term.]]></phrase>
+		<phrase key="loanMortgage_error_rate" module="frontEnd"><![CDATA[Please enter a valid loan rate.]]></phrase>
+		<phrase version="2.1.0" key="loanMortgage_option_name" module="admin"><![CDATA[Loan Mortgage Calculator]]></phrase>
+		<phrase version="2.2.0" key="loanMortgage_listing_unavailable" module="frontEnd"><![CDATA[Listing you requested isn't available anymore]]></phrase>
+		<phrase version="2.2.0" key="loanMortgage_calculation" module="frontEnd"><![CDATA[Loan Mortgage Calculation]]></phrase>
+	</phrases>
+	
+	<pages>
+		<page version="2.2.0" key="loanMortgage_print" readonly="1" name="Print Loan/Mortgage Schedule" type="system" path="print-loan-schedule" controller="print" login="0" tpl="0"><![CDATA[]]></page>
+	</pages>
+	
+	<uninstall><![CDATA[
+		global $rlDb;
+		
+		$sql = "ALTER TABLE `".RL_DBPREFIX."listing_types` DROP `Loan_calc`";
+		$rlDb -> query($sql);
+	]]></uninstall>
+	
+</plugin>

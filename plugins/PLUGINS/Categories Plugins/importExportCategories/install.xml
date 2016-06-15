@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="importExportCategories">
+	<title>Im/Ex Category</title>
+	<description>Imports/Exports categories through XLS files</description>
+	<author>Alex</author>
+	<owner>Flynax classifieds software</owner>
+	<version>2.0.3</version>
+	<date>14.02.2012</date>
+	<controller>importExportCategories</controller>
+
+	<files>
+		<file>rlImportExportCategories.class.php</file>
+		<file>admin/importExportCategories.inc.php</file>
+		<file>admin/importExportCategories.tpl</file>
+		<file>admin/static/example.png</file>
+		<file>admin/static/export.png</file>
+		<file>admin/static/style.css</file>
+		<file>admin/lib/oleread.php</file>
+		<file>admin/lib/reader.php</file>
+	<files>
+
+	<hooks>
+		<hook name="apTplHeader">
+		<![CDATA[
+			if ( $_GET['controller'] == 'importExportCategories' )
+			{
+				echo '<link href="'. RL_PLUGINS_URL .'importExportCategories/admin/static/style.css" type="text/css" rel="stylesheet" />';
+			}
+		]]>
+		</hook>
+	</hooks>
+
+	<phrases>
+		<phrase key="importExportCategories_incorrect_file_ext" module="admin"><![CDATA[Extension of the uploaded file is incorrect, XLS format is allowed only]]></phrase>
+		<phrase key="importExportCategories_import_filename_empty" module="admin"><![CDATA[Please fill in the required <b>[field]</b>]]></phrase>
+		<phrase key="importExportCategories_empty" module="admin"><![CDATA[Please select categories to be imported]]></phrase>
+		<phrase key="importExportCategories_not_move_file" module="admin"><![CDATA[Failed to copy the file for parsing]]></phrase>
+		<phrase key="importExportCategories_count" module="admin"><![CDATA[<b>[count]</b> new categories imported]]></phrase>
+		<phrase key="importExportCategories_file_not_readable" module="admin"><![CDATA[The file is not readable]]></phrase>
+		<phrase key="importExportCategories_selector_tr_parent" module="admin"><![CDATA[Parent]]></phrase>
+		<phrase key="importExportCategories_selector_tr_name" module="admin"><![CDATA[Name]]></phrase>
+		<phrase key="importExportCategories_selector_tr_path" module="admin"><![CDATA[Path]]></phrase>
+		<phrase key="importExportCategories_selector_tr_type" module="admin"><![CDATA[Type]]></phrase>
+		<phrase key="importExportCategories_selector_tr_lock" module="admin"><![CDATA[Lock]]></phrase>
+		<phrase key="importExportCategories_no_parent" module="admin"><![CDATA[No Parent]]></phrase>
+		<phrase key="importExportCategories_selector_tr_key" module="admin"><![CDATA[Key]]></phrase>
+		<phrase key="importExportCategories_import" module="admin"><![CDATA[Import]]></phrase>
+		<phrase key="importExportCategories_export" module="admin"><![CDATA[Export]]></phrase>
+	</phrases>
+
+	<updates>
+		<update version="2.0.1" files="admin/importExportCategories.inc.php"><![CDATA[]]></update>
+		<update version="2.0.2" files="rlImportExportCategories.class.php"><![CDATA[]]></update>
+		<update version="2.0.3" files="rlImportExportCategories.class.php,admin/importExportCategories.inc.php"><![CDATA[]]></update>
+	</updates>
+
+</plugin>

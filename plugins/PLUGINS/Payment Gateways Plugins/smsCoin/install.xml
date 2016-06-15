@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="smsCoin">
+	<title>SMSCoin</title>
+	<description>SMSCoin payment gateway</description>
+	<author>Vladimir</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>1.0.2</version>
+	<date>27.01.2012</date>
+	<instruction />
+	<files>                                    
+		<file>controllers/pre.gateway.php</file>
+		<file>controllers/post.gateway.php</file>
+		<file>rlSMSCoin.class.php</file>
+		<file>smscoin_payment_block.tpl</file>
+		<file>paymentGateway.php</file>
+		<file>countries.php</file>
+	</files>
+	<hooks>
+		<hook name="paymentGateway" version="1.0.1">
+			<![CDATA[                                                           
+				require_once(RL_PLUGINS .'smsCoin'. RL_DS .'paymentGateway.php');
+			]]>
+		</hook>
+	</hooks>
+	<phrases>
+		<phrase key="smscoin_payment" module="common"><![CDATA[SMSCoin]]></phrase>
+	<phrases>
+
+	<updates>
+		<update version="1.0.1" files="paymentGateway.php"><![CDATA[]]></update>
+		<update version="1.0.2" files="controllers/post.gateway.php"><![CDATA[]]></update>
+	</updates>    
+
+	<config key="smscoin_divider" name="SMSCoin Bank" description="" values="" type="divider" group="6"><![CDATA[]]></config>
+	<config key="smscoin_module" name="SMSCoin module" description="" values="" type="bool" validate="" group="6"><![CDATA[1]]></config>
+	<config key="smscoin_s_purse" name="SMSCoin ID" description="" values="" type="text" validate="" group="6"><![CDATA[]]></config>
+	<config key="smscoin_s_clear_amount" name="Use billing algorithm" description="" values="" type="bool" validate="" group="6"><![CDATA[0]]></config>      
+	<config key="smscoin_language" name="Language" description="" values="" type="text" validate="" group="6"><![CDATA[english]]></config>
+	<config key="smscoin_keyword" name="Keyword" description="" values="" type="text" validate="" group="6"><![CDATA[]]></config>
+	<config key="smscoin_s_description" name="Description" description="" values="" type="text" validate="" group="6"><![CDATA[]]></config>
+</plugin>

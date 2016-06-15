@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="browse_map">
+	<title>Listings on Map</title>
+	<description>Displays location of all listings on one map</description>
+	<author>John Freeman</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>2.0.2</version>
+	<date>09.03.2012</date>
+	
+	<files>
+		<file>rlBrowseMap.class.php</file>
+		<file>icon.tpl</file>
+		<file>map.tpl</file>
+		<file>static/style.css</file>
+	</files>
+	
+	<install><![CDATA[
+		global $rlDb;
+		
+		$sql = "SELECT `ID` FROM `". RL_DBPREFIX ."pages` WHERE (`Controller` = 'listing_type' OR `Controller` = 'recently_added'  OR `Controller` = 'search') AND `Key` != 'search_by_distance' ";
+		$ids = $rlDb -> getAll($sql);
+		
+		foreach ($ids as $id)
+		{
+			$page_ids .= $id['ID'] .',';
+		}
+		$page_ids = trim($page_ids, ',');
+		
+		$sql = "UPDATE `". RL_DBPREFIX ."blocks` SET `Sticky` = '0', `Cat_sticky` = '1', `Page_ID` = '{$page_ids}' WHERE `Key` = 'browseMap_map' LIMIT 1";
+		$rlDb -> query($sql);
+	]]>
+	</install>
+
+	<hooks>
+		<hook name="boot"><![CDATA[
+			global $reefless, $rlSmarty, $config, $block_keys, $rlDb, $rlLang;
+			
+			if ( !$config['browse_map_module'] )
+				return;
+			
+			$rlSmarty -> assign('bm_alphabet', range('A', 'Z'));
+			
+			if ( $config['browse_map_amenities'] && array_key_exists( 'browseMap_map', $block_keys ) )
+			{
+				$rlDb -> setTable('map_amenities');
+				$amenities = $rlDb -> fetch(array('Key', 'Default'), array('Status' => 'active'), "ORDER BY `Position`");
+				$amenities = $rlLang -> replaceLangKeys( $amenities, 'map_amenities', array('name') );
+				$rlSmarty -> assign_by_ref('amenities', $amenities);
+			}
+			
+			if ( $_GET['request'] == 'browseMap' && $_GET['id'] )
+			{
+				$id = (int)$_GET['id'];
+				
+				$reefless -> loadClass('BrowseMap', false, 'browse_map');
+				$GLOBALS['rlBrowseMap'] -> loadListingData($id);
+				exit;
+			}
+		]]></hook>
+		<hook name="tplHeader"><![CDATA[
+			global $aHooks, $config;
+			
+			if ( !$config['browse_map_module'] )
+				return;
+			
+			if ( !$aHooks['search_by_distance'] )
+			{
+				echo '<link href="'.RL_PLUGINS_URL.'browse_map/static/style.css" type="text/css" rel="stylesheet" />';
+			}
+		]]></hook>
+		<hook name="listingAfterStats"><![CDATA[
+			global $rlSmarty, $bm_letter, $config;
+			
+			if ( !$config['browse_map_module'] )
+				return;
+			
+			$listing = $rlSmarty -> get_template_vars('listing');
+			if ( $listing['Loc_latitude'] && $listing['Loc_longitude'] )
+			{
+				$rlSmarty -> assign('bm_letter', $bm_letter++);
+			}
+			
+			$GLOBALS['rlSmarty'] -> display(RL_ROOT . 'plugins' . RL_DS . 'browse_map' . RL_DS . 'icon.tpl');
+		]]></hook>
+		<hook version="2.0.2" name="ajaxRecentlyAddedLoadPost"><![CDATA[
+			global $_response, $config, $lra_listings, $requested_key;
+
+			if ( !$config['browse_map_module'] )
+				return;
+
+			$js = ' eval(" browseMap.markers = new Array(); browseMap.mapping = new Array(); ';
+			
+			if ( $lra_listings )
+			{
+				foreach ($lra_listings as $index => $listing)
+				{
+					if ( $listing['Loc_latitude'] && $listing['Loc_longitude'] )
+					{
+						$js .= "browseMap.markers.push(new Array('{$listing['Loc_latitude']},{$listing['Loc_longitude']}', lang['loading'], 'direct', '{$listing['ID']}')); browseMap.mapping[{$listing['ID']}] = {$index};";
+					}
+				}
+			}
+			
+			$js .= '");';
+			
+			$_response -> script($js);
+			$_response -> script("browseMap.recentlyReload('{$requested_key}')");
+		]]></hook>
+		<hook version="2.0.2" name="ajaxRecentlyAddedLoadPre"><![CDATA[
+			global $rlSmarty;
+
+			$rlSmarty -> assign('bm_alphabet', range('A', 'Z'));
+		]]></hook>
+	</hooks>
+	
+	<phrases>
+		<phrase key="browseMap_show_on_map" module="frontEnd"><![CDATA[Show on the map]]></phrase>
+		<phrase key="browseMap_module_disabled" module="frontEnd"><![CDATA[The "Listings on Map" module is disabled]]></phrase>
+	</phrases>
+
+	<blocks>
+		<block key="browseMap_map" name="Listings on Map" side="top" type="smarty" tpl="0"><![CDATA[
+			{include file=$smarty.const.RL_PLUGINS|cat:'browse_map'|cat:$smarty.const.RL_DS|cat:'map.tpl'}
+		]]></block>
+	</blocks>
+	
+	<configs key="browse_map_group" name="Listings on Map">
+		<![CDATA[]]>
+		<config key="browse_map_module" name="Listings on Map module" type="bool" ><![CDATA[1]]></config>
+		<config key="browse_map_width" name="Map width" description="in pixels (leave empty to set 100%)" type="text" validate="int"><![CDATA[]]></config>
+		<config key="browse_map_height" name="Map height" description="in pixels" type="text" validate="int"><![CDATA[300]]></config>
+		<config key="browse_map_amenities" name="Display aminities box" type="bool"><![CDATA[1]]></config>
+		<config key="browse_map_letters" name="Use letter on markers" type="bool"><![CDATA[1]]></config>
+	</configs>
+	
+	<updates>
+		<update version="2.0.1" files="map.tpl"><![CDATA[]]></update>
+		<update version="2.0.2" files="map.tpl,static/lib.js,rlBrowseMap.class.php,icon.tpl,markers/.htaccess"><![CDATA[]]></update>
+	</updates>
+	
+</plugin>

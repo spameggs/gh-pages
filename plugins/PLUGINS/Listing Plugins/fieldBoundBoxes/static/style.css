@@ -1,0 +1,21 @@
+div.field_bound_box
+{
+	width: auto;
+	overflow: hidden;
+}
+div.field_bound_box ul
+{
+	padding: 0 0;
+}
+div.field_bound_box ul div.item
+{
+	padding: 5px 5px 10px;
+}
+.field_bound_box a.category
+{
+	font-size: 12px!important;
+}
+.field_bound_box ul span
+{
+	font-size: 12px!important;
+}

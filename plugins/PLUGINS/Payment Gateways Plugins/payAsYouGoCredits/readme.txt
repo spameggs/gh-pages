@@ -1,0 +1,5 @@
+Pay-As-You-Go Credits Flynax plugin gives you an opportunity to arrange Pay-As-You-Go credits system at your classifieds website, that is the most convenient and attractive service for you and your site users.
+
+This plugin allows you to create different packages with credits and manage their prices, and make the purchase of packages with set of credits more advantageous for your site users. In other words the more credits a package has the more purchase will bring a discount to your site users. Credits can be easily managed and granted to site users from the administration interface of a classifieds website.
+
+Pay-As-You-Go Credits Flynax plugin has a special feature and convenience that is the balance can be credited by SMS (this requires installation of Flynax SMS Payment plugin). This also can be used in some cases when there is no enough balance to buy a package with credits or no way to buy it by one SMS, due to limitation to one SMS transaction in some countries. Thus site users can credit their balance by several SMS and buy necessary package.

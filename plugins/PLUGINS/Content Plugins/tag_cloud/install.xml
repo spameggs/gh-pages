@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="tag_cloud">
+	<title>Tag Cloud</title>
+	<description>Creates tag cloud block in front-end</description>
+	<author>Mike Fletcher</author>
+	<owner>Flynax classifieds Software</owner>
+	<version>2.0.1</version>
+	<date>24.07.2009</date>
+	<controller>tag_cloud</controller>
+	<files>
+		<file>admin/tag_cloud.tpl</file>
+		<file>admin/tag_cloud.inc.php</file>
+		<file>tag_cloud.tpl</file>
+		<file>tags.inc.php</file>
+		<file>tags.tpl</file>
+		<file>rlTagCloud.class.php</file>
+	</files>
+	
+	<install><![CDATA[
+		global $rlDb;
+		$sql = "CREATE TABLE `".RL_DBPREFIX."tag_cloud` (
+			  `ID` int(11) NOT NULL auto_increment,
+			  `Tag` varchar(255) character set utf8 NOT NULL,
+			  `Date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+			  `Path` varchar(255) NOT NULL default '',
+			  `Type` varchar(50) NOT NULL default '',
+			  `Key` varchar(255) NOT NULL default '',
+			  `Count` int(9) NOT NULL default '0',
+			  `Modified` datetime NOT NULL default '0000-00-00 00:00:00',
+			  `Status` enum('active','approval','trash') NOT NULL default 'active',
+			  PRIMARY KEY  (`ID`),
+			  KEY `Type` (`Type`)
+		);";
+		$rlDb->query($sql);
+		]]>
+	</install>
+
+	<hooks>
+		<hook name="searchSelectArea">
+			<![CDATA[
+				if( $param3['Key'] == 'keyword_search' && $param2 )
+				{
+					$GLOBALS['reefless'] -> loadClass("TagCloud", null, "tag_cloud");
+					$GLOBALS['rlTagCloud'] -> searchAddTag( $param2 );
+				}
+			]]></hook>
+		<hook name="tplHeader"><![CDATA[
+			if( $GLOBALS['config']['tc_box_type'] == 'gradient' )
+			{
+				echo '<script type="text/javascript" src="'.RL_PLUGINS_URL.'tag_cloud/static/jquery.tagcloud.js"></script>';
+			}elseif( $GLOBALS['config']['tc_box_type'] == 'circle' )
+			{
+				echo '<link rel="stylesheet" type="text/css" href="'.RL_PLUGINS_URL.'tag_cloud/static/jqcloud.css" />';
+				echo '<script type="text/javascript" src="'.RL_PLUGINS_URL.'tag_cloud/static/jqcloud.js"></script>';
+			}
+			]]></hook>
+		<hook name="sitemapAddUrlsInFile">
+			<![CDATA[			
+				global $xml, $rlSitemap, $sitemap_options;
+
+				if($sitemap_options['mod'] == 'tags' && $sitemap_options['number'] > 0)
+				{
+					$start = ( $sitemap_options['number'] - 1 ) * $rlSitemap -> limit_urls;
+
+					$GLOBALS['reefless'] -> loadClass('TagCloud', null, 'tag_cloud');
+					$data = $GLOBALS['rlTagCloud'] -> getTagsForSitemap( $start, $rlSitemap -> limit_urls, $rlSitemap -> languages_count );
+                    
+					$xml .= $rlSitemap -> _build_sitemap_items($sitemap_options['type'], $data);
+				}
+			]]></hook>
+		<hook name="sitemapTotalUrls">
+			<![CDATA[
+				global  $rlSitemap;
+				$count = $GLOBALS['rlDb'] -> getRow("SELECT COUNT(*) as `count` FROM `".RL_DBPREFIX."tag_cloud` WHERE `Status` = 'active'");
+				$rlSitemap -> total += $count['count'];
+			]]></hook>
+		<hook name="sitemapAddNewFile">
+			<![CDATA[
+				global $xml, $rlSitemap;
+				$count = $GLOBALS['rlDb'] -> getRow("SELECT COUNT(*) as `count` FROM `".RL_DBPREFIX."tag_cloud` WHERE `Status` = 'active'");
+				$xml .= $rlSitemap -> _build_sitemap_files( $count['count'], "tags_" );
+			]]></hook>
+		<hook name="sitemapAddUrlsCommon">
+			<![CDATA[
+				global $xml, $rlSitemap, $sitemap_options;
+
+				$GLOBALS['reefless'] -> loadClass('TagCloud', null, 'tag_cloud');
+				$items = $GLOBALS['rlTagCloud'] -> getTagsForSitemap(0, $rlSitemap -> limit_urls );
+
+				foreach( $items as $key => $value )
+				{
+					$rlSitemap -> add_lang_code( $value['url'], $lang['Code'] );
+					$xml .= $rlSitemap -> _build_item( $sitemap_options['type'], $value );
+				}
+				unset( $items );
+			]]></hook>
+	</hooks>
+	
+	<blocks>
+		<block key="tag_cloud" login="0" name="Tag Cloud" side="bottom" type="php" tpl="0"><![CDATA[$GLOBALS['rlSmarty'] -> display(RL_PLUGINS . "tag_cloud" . RL_DS . "tag_cloud.tpl");]]></block>
+	</blocks>
+
+	<pages>
+		<page key="tags" name="Tags page" type="system" path="tag" get="" controller="tags" menus="" tpl="1"><![CDATA[]]></page>
+	</pages>
+
+	<configs key="tag_cloud" name="Tag Cloud">
+		<![CDATA[]]>
+		<config key="tc_limit" name="Number of tags in box" description="" values="" type="text"><![CDATA[30]]></config>
+		<config key="tc_tag_min_length" name="Tag minimum length" description="" values="" type="text"><![CDATA[3]]></config>
+		<config key="tc_order" name="Order tags by" description="" values="randomly,clicks,date" type="select"><![CDATA[clicks]]></config>
+		<config key="tc_urls_postfix" name="Adding .html to urls" description="" values="" type="bool"><![CDATA[1]]></config>
+		<config key="tc_tag_new_page" name="Opening tags in new tab" description="" values="" type="bool"><![CDATA[0]]></config>
+		<config key="tc_exwords" name="Banned words" description="list of words separated by comma" values="" type="textarea"><![CDATA[tag,tags,page]]></config>
+		<config key="tc_highlight_tag" name="Highlighting tags in results" description="" values="" type="bool"><![CDATA[0]]></config>
+		<config key="tc_query_explode" name="Splitting search queries into single keywords" description="" values="" type="bool"><![CDATA[0]]></config>
+
+		<config key="tc_cloud_divider" name="Tag Cloud Appearance" description="" values="" type="divider"><![CDATA[]]></config>
+		<config key="tc_box_type" name="Box type" description="" values="simple,gradient,circle" type="select"><![CDATA[simple]]></config>
+		<config key="tc_minsize" name="Minimum font size" description="px" values="" type="text"><![CDATA[11]]></config>
+		<config key="tc_maxsize" name="Maximum font size" description="px" values="" type="text"><![CDATA[30]]></config>
+		<config key="tc_jquery_gradient_start" name="Gradient start (except for simple type)" description="in hex format i.e. #fff" values="" type="text"><![CDATA[#6064ae]]></config>
+		<config key="tc_jquery_gradient_end" name="Gradient end (except for simple type)" description="in hex format i.e. #fff" values="" type="text"><![CDATA[#2b2c4c]]></config>
+		<config key="tc_jquery_circle_height" name="Cloud height (if type is circle)" description="px" values="" type="text"><![CDATA[200]]></config>
+		<config key="tc_tags_display_type" name="Tag transformation options" description="ucfirst - first letters in tags are capitalized; ucwords - first letters in all words of a tag are capitalized" values="ucwords,ucfirst,uppercase,lowercase,as_is" type="select"><![CDATA[ucfirst]]></config>
+	</configs>
+	
+	<phrases>		
+		<phrase key="tc_manager" module="admin"><![CDATA[Tag Cloud Manager]]></phrase>
+		<phrase key="tc_tag" module="admin"><![CDATA[Tag]]></phrase>
+		<phrase key="tc_tag_count" module="admin"><![CDATA[Count]]></phrase>
+		<phrase key="tc_add_tag" module="admin"><![CDATA[Add a Tag]]></phrase>
+		<phrase key="tc_data_incorrect" module="admin"><![CDATA[Data incorrect]]></phrase>
+		<phrase key="tc_item_exists" module="admin"><![CDATA[Item already exists]]></phrase>
+		<phrase key="tc_path_hint" module="admin"><![CDATA[leave empty to generate automatically]]></phrase>
+		<phrase key="tc_tag_path" module="admin"><![CDATA[Tag path]]></phrase>
+		<phrase key="tc_notice_tag_exist" module="admin"><![CDATA[Tag already in the database]]></phrase>
+		<phrase key="tc_notice_path_exist" module="admin"><![CDATA[Tag with the path [path] already in the database]]></phrase>
+		<phrase key="tc_url_listing_logic" module="admin"><![CDATA[Urls with numbers at the end are not allowed]]></phrase>
+		<phrase key="tc_tag_added" module="admin"><![CDATA[Tag successfully added]]></phrase>
+		<phrase key="tc_tag_list" module="admin"><![CDATA[Tag List]]></phrase>
+		<phrase key="tc_ltype_hint" module="admin"><![CDATA[Tag page will show only listings of selected type]]></phrase>
+		<phrase key="tc_name" module="admin"><![CDATA[Tag]]></phrase>
+		<phrase key="tc_defaults" module="admin"><![CDATA[Default options]]></phrase>
+		<phrase key="tc_defaults_updated" module="admin"><![CDATA[Default data updated]]></phrase>
+		<phrase key="tc_defaults_hint" module="admin"><![CDATA[Data entered on the page will be used for tags, which have missing meta description, meta keywords, titles and description, by default. Please use {tag} variable in the description and title fields. Default {tag} variable will be replaced with a real tag on appropriate tag page.]]></phrase>
+		<phrase key="tc_import" module="admin"><![CDATA[Import]]></phrase>
+		<phrase key="tc_import_field" module="admin"><![CDATA[List of tags separated by comma]]></phrase>
+		<phrase key="tc_tags_imported" module="admin"><![CDATA[Tags successfully imported]]></phrase>
+		<phrase key="tc_cloud_empty" module="frontEnd"><![CDATA[No Tags Yet]]></phrase>		
+	</phrases>
+
+	<updates>
+		<update version="2.0.1" files="admin/tag_cloud.inc.php,rlTagCloud.class.php,tags.tpl" ><![CDATA[
+			$GLOBALS['rlDb'] -> query( "ALTER TABLE `".RL_DBPREFIX."tag_cloud` CHANGE `Type` `Type` varchar(50) NOT NULL default '' ");
+			]]>
+		</update>
+	<updates>
+
+	<uninstall><![CDATA[
+		global $rlDb;
+		$sql ="DROP TABLE IF EXISTS `".RL_DBPREFIX."tag_cloud`";
+		$rlDb->query($sql);
+	]]>
+	</uninstall>
+</plugin>

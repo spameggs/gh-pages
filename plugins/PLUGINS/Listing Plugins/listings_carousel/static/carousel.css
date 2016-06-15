@@ -1,0 +1,32 @@
+div.carousel
+{
+	position: relative;
+}
+div.cVertical
+{
+	padding: 25px 0;
+}
+div.carousel div.carousel_block
+{
+	overflow: hidden; 
+	position: relative;
+	z-index: 2;
+	left: 0px;
+}
+div.carousel div.carousel_block > ul
+{
+	margin: 0;
+	padding: 0;
+	list-style-type: none;
+	z-index: 1;
+}
+div.cHorizontal ul.featured>li,
+div.cVertical ul.featured>li
+{
+	overflow: hidden;
+	float: left;
+}
+div.cVertical ul li
+{
+	clear: both;
+}

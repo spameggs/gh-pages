@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="bookmarks">
+	<title>Bookmarks and Share</title>
+	<description>Adds Social Bookmark buttons</description>
+	<author>John Freeman</author>
+	<owner>Flynax classifieds software</owner>
+	<version>3.0.7</version>
+	<date>14.05.2012</date>
+	<controller>bookmarks</controller>
+
+	<files>
+		<file>buttons.tpl</file>
+		<file>fb_box.tpl</file>
+		<file>rlBookmarks.class.php</file>
+		<file>admin/bookmarks.inc.php</file>
+		<file>admin/bookmarks.tpl</file>
+		<file>static/gallery.png</file>
+		<file>static/style.css</file>
+	</files>
+	
+	<install><![CDATA[
+	global $rlDb, $reefless;
+
+	$sql = "
+	CREATE TABLE `".RL_DBPREFIX."bookmarks` (
+	`ID` INT NOT NULL AUTO_INCREMENT ,
+	`Key` VARCHAR( 30 ) NOT NULL ,
+	`Type` VARCHAR( 30 ) NOT NULL ,
+	`Services` mediumtext NOT NULL,
+	`Align` ENUM( 'left', 'center', 'right' ) DEFAULT 'center' NOT NULL ,
+	`Color` varchar(6) NOT NULL default '',
+	`View_mode` enum('large','medium','small') NOT NULL DEFAULT 'large',
+	`Status` ENUM( 'active', 'approval' ) DEFAULT 'active' NOT NULL ,
+	PRIMARY KEY ( `ID` )
+	) CHARSET=utf8";
+	
+	$rlDb -> query($sql);
+	
+	$sql = "INSERT INTO `".RL_DBPREFIX."bookmarks` (`Key`, `Type`, `Services`, `Align`, `Color`, `View_mode`, `Status`) VALUES ('floating_bar', 'floating_bar', 'compact,facebook,twitter,google', 'center', 'ebebeb', 'medium', 'active')";
+	$rlDb -> query($sql);
+	]]>
+	</install>
+	
+	<hooks>
+		<hook version="3.0.6" name="tplHeader"><![CDATA[
+			echo '<link href="'. RL_PLUGINS_URL .'bookmarks/static/style.css" type="text/css" rel="stylesheet" />';
+			if(RL_LANG_DIR == 'rtl')
+			{
+				echo '<link href="'. RL_PLUGINS_URL .'bookmarks/static/rtl.css" type="text/css" rel="stylesheet" />';
+			}
+		]]></hook>
+		<hook name="boot"><![CDATA[
+			global $reefless, $rlSmarty;
+			$reefless -> loadClass('Bookmarks', null, 'bookmarks');
+			
+			$rlSmarty -> assign_by_ref('bsh_services', $GLOBALS['rlBookmarks'] -> services);
+		]]></hook>
+	</hooks>
+	
+	<configs key="bookmarks_config" name="Bookmarks">
+		<![CDATA[]]>
+		<config key="bookmarks_addthis_divider" name="AddThis Analytics" type="divider"><![CDATA[]]></config>
+		<config key="bookmarks_addthis_id" name="AddThis ID" description="Using this AddThis ID you enable Bookmarks Analytics" values="" type="text" validate=""><![CDATA[]]></config>
+		<config key="bookmarks_fb_box_divider" name="Facebook Funs Box" type="divider"><![CDATA[]]></config>
+		<config key="bookmarks_fb_box_appid" name="Facebook APP ID" type="text"><![CDATA[]]></config>
+		<config key="bookmarks_fb_box_url" name="Facebook Page URL" type="text"><![CDATA[http://www.facebook.com/YOUR_NAME]]></config>
+		<config key="bookmarks_fb_box_color" name="Color Scheme" type="select" values="light,dark"><![CDATA[light]]></config>
+		<config key="bookmarks_fb_box_border" name="Border Color" description="HTML valid color, ex: #ff0000 or white" type="text"><![CDATA[]]></config>
+		<config key="bookmarks_fb_box_faces" name="Show Faces" type="bool"><![CDATA[1]]></config>
+		<config key="bookmarks_fb_box_stream" name="Show Stream" type="bool"><![CDATA[0]]></config>
+		<config key="bookmarks_fb_box_header" name="Show Header" type="bool"><![CDATA[0]]></config>
+	</configs>
+
+	<phrases>
+		<phrase key="bookmarks_share" module="common"><![CDATA[Share]]></phrase>
+		<phrase key="bookmarks_display_mode" module="admin"><![CDATA[Display mode]]></phrase>
+		<phrase key="bsh_add_block" module="admin"><![CDATA[Add Bookmark]]></phrase>
+		<phrase key="bsh_choose_another" module="admin"><![CDATA[Choose another]]></phrase>
+		<phrase key="bsh_bookmark_type" module="admin"><![CDATA[Bookmark Type]]></phrase>
+		<phrase key="bsh_add_bookmark_block" module="admin"><![CDATA[Add Bookmark Block]]></phrase>
+		<phrase key="bsh_edit_bookmark_block" module="admin"><![CDATA[Edit Bookmark Block]]></phrase>
+		<phrase key="bookmark_left" module="admin"><![CDATA[Left]]></phrase>
+		<phrase key="bookmark_center" module="admin"><![CDATA[Center]]></phrase>
+		<phrase key="bookmark_right" module="admin"><![CDATA[Right]]></phrase>
+		<phrase key="bookmarks_align" module="admin"><![CDATA[Align in the block]]></phrase>
+		<phrase key="bookmarks_color" module="admin"><![CDATA[Color]]></phrase>
+		<phrase key="bookmarks_services" module="admin"><![CDATA[Services]]></phrase>
+		<phrase key="bsh_block_added" module="admin"><![CDATA[New bookmark block has been successfully added.]]></phrase>
+		<phrase key="bsh_block_edited" module="admin"><![CDATA[Bookmark block has been successfully edited.]]></phrase>
+		
+		<phrase key="bookmarks_ext_caption" module="ext"><![CDATA[Bookmarks & Share blocks manager]]></phrase>
+		<phrase key="bsh_ext_align" module="ext"><![CDATA[Align]]></phrase>
+		<phrase key="bsh_ext_left" module="ext"><![CDATA[Left]]></phrase>
+		<phrase key="bsh_ext_center" module="ext"><![CDATA[Center]]></phrase>
+		<phrase key="bsh_ext_right" module="ext"><![CDATA[Right]]></phrase>
+        
+        <phrase key="bsh_vertical_share_counter" module="admin"><![CDATA[Vertical Share Counter]]></phrase>
+        <phrase key="bsh_horizontal_share_counter" module="admin"><![CDATA[Horizontal Share Counter]]></phrase>
+        <phrase key="bsh_tweet_like_share" module="admin"><![CDATA[Like + Tweet + Share]]></phrase>
+        <phrase key="bsh_googleplus_like_tweet" module="admin"><![CDATA[Google Plus + Like + Tweet]]></phrase>
+        <phrase key="bsh_toolbox_facebook_like" module="admin"><![CDATA[Toolbox + Facebook Like]]></phrase>
+        <phrase key="bsh_floating_bar" module="admin"><![CDATA[Floating Vertical Bar]]></phrase>
+        <phrase key="bsh_32x32_icons_addthis" module="admin"><![CDATA[32x32 Icons (AddThis)]]></phrase>
+        <phrase key="bsh_64x64_icons_aquaticus" module="admin"><![CDATA[64x64 Icons (Aquaticus)]]></phrase>
+        <phrase key="bsh_css3_share_buttons" module="admin"><![CDATA[CSS3 Share Button]]></phrase>
+        <phrase key="bsh_32x32_vertical_icons" module="admin"><![CDATA[32x32 Vertical Icons]]></phrase>
+        <phrase key="bsh_vertical_layout_menu" module="admin"><![CDATA[Vertical Layout Menu]]></phrase>
+        <phrase key="bsh_wibiya_bar" module="admin"><![CDATA[Wibiya Bar]]></phrase>
+        <phrase key="bsh_share_button" module="admin"><![CDATA[Share Button]]></phrase>
+        
+        <phrase key="bookmarks_view_mode" module="admin"><![CDATA[View mode]]></phrase>
+        <phrase key="bookmark_mode_large" module="admin"><![CDATA[Large Counters]]></phrase>
+        <phrase key="bookmark_mode_medium" module="admin"><![CDATA[Medium Buttons]]></phrase>
+        <phrase key="bookmark_mode_small" module="admin"><![CDATA[Small Buttons]]></phrase>
+        
+        <phrase key="bookmarks_fb_box_deny" module="frontEnd"><![CDATA[Facebook Box disabled, please configure it from the Admin Panel]]></phrase>
+	</phrases>
+	
+	<blocks>
+		<block key="bookmark_floating_bar" name="Follow us at..." side="middle_right" type="smarty" tpl="0"><![CDATA[
+			{include file=$smarty.const.RL_PLUGINS|cat:$smarty.const.RL_DS|cat:"bookmarks"|cat:$smarty.const.RL_DS|cat:"buttons.tpl" type="floating_bar" align="center" color="ebebeb" view_mode="medium" services="compact,facebook,twitter,google"}
+		]]></block>
+		<block key="bookmark_fb_box" name="Facebook Funs" side="left" type="smarty" tpl="1"><![CDATA[
+			{include file=$smarty.const.RL_PLUGINS|cat:$smarty.const.RL_DS|cat:"bookmarks"|cat:$smarty.const.RL_DS|cat:"fb_box.tpl"}
+		]]></block>
+	</blocks>
+	
+	<updates>
+		<update version="3.0.1" files="fb_box.tpl,static/style.css"><![CDATA[]]></update>
+		<update version="3.0.2" files="admin/bookmarks.inc.php,admin/bookmarks.tpl"><![CDATA[
+			global $rlDb;
+			$sql = "UPDATE `".RL_DBPREFIX."blocks` SET `Key` = CONCAT('bookmark_', `Key`) WHERE `Plugin` = 'bookmarks' AND `Key` <> 'bookmark_fb_box'";
+			
+			$rlDb -> query($sql);
+		]]></update>
+		<update version="3.0.3" files="admin/bookmarks.inc.php,admin/bookmarks.tpl,buttons.tpl,rlBookmarks.class.php"><![CDATA[]]></update>
+		<update version="3.0.4" files="admin/bookmarks.inc.php"><![CDATA[]]></update>
+		<update version="3.0.5" files="admin/bookmarks.inc.php,admin/bookmarks.tpl"><![CDATA[]]></update>
+		<update version="3.0.6" files="rlBookmarks.class.php"><![CDATA[]]></update>
+		<update version="3.0.7" files="fb_box.tpl"><![CDATA[]]></update>
+	</updates>
+	
+	<uninstall>
+		<![CDATA[
+			global $rlDb;
+			
+			$sql = "DROP TABLE `".RL_DBPREFIX."bookmarks`";
+			$rlDb -> query($sql);
+		]]>
+	</uninstall>
+</plugin>

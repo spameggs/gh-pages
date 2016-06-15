@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="listing_navigator">
+	<title>Listings navigation plugin</title>
+	<description>Quick navigation between listing details pages</description>
+	<author>John Freeman</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>2.0.0</version>
+	<date>20.07.2013</date>
+	
+	<files>
+		<file>rlListingNavigator.class.php</file>
+		<file>navigation.tpl</file>
+		<file>static/style.css</file>
+		<file>static/gallery.png</file>
+	</files>
+	
+	<hooks>
+		<hook name="tplHeader"><![CDATA[
+			global $page_info, $config;
+			if ( $page_info['Controller'] == 'listing_details')
+			{
+				echo '<link href="'. RL_PLUGINS_URL .'listing_navigator/static/style.css" type="text/css" rel="stylesheet" />';
+				
+				if ( isset($_GET['lnp_item']) ) {
+					echo '<link rel="canonical" href="'. RL_URL_HOME . ltrim($_SERVER['REDIRECT_URL'], '/') .'" />';
+				}
+			}
+		]]></hook>
+		<hook name="listingDetailsTopTpl"><![CDATA[
+			global $rlSmarty;
+			
+			$rlSmarty -> display(RL_PLUGINS . 'listing_navigator' . RL_DS . 'navigation.tpl');
+		]]></hook>
+		<hook name="listingDetailsTop"><![CDATA[
+			global $rlSmarty, $ln_keyword_search_data, $ln_keyword_search_post, $listing_type, 
+				$config, $pages, $advanced_search_url, $search_results_url, $page_info, $listing_id, $listing_data;
+			
+			/* get navigation data */
+			$GLOBALS['rlListingNavigator'] -> get($listing_id, $listing_data);
+				
+			/* re-assign session data regarding search results */
+			if ( $_SESSION['keyword_search_data'] )
+			{
+				$return_link = SEO_BASE;
+				
+				if ( $_SESSION['keyword_search_pageNum'] > 1 ) {
+					$paging = $config['mod_rewrite'] ? '/index'. $_SESSION['keyword_search_pageNum'] : '&amp;pg='. $_SESSION['keyword_search_pageNum'];
+				}
+				
+				$return_link .= $config['mod_rewrite'] ? $pages['search'] . $paging .'.html' : '?page='. $pages['search'] .'&amp;'. $paging;
+			}
+			elseif ( $_SESSION[$listing_type['Key'] .'_post'] )
+			{
+				$return_link = SEO_BASE;
+				
+				if ( $_SESSION[$listing_type['Key'] .'_advanced'] )
+				{
+					$search_results_url = $config['mod_rewrite'] ? $advanced_search_url .'/'. $search_results_url : $advanced_search_url .'&amp;'. $search_results_url;
+				}
+				if ( $_SESSION[$listing_type['Key'] .'_pageNum'] > 1 )
+				{
+					$paging = $config['mod_rewrite'] ? '/index'. $_SESSION[$listing_type['Key'] .'_pageNum'] : '&amp;pg='. $_SESSION[$listing_type['Key'] .'_pageNum'];
+				}
+				
+				$return_link .= $config['mod_rewrite'] ? $page_info['Path'] .'/'. $search_results_url . $paging .'.html' : '?page='. $page_info['Path'] .'&amp;'. $search_results_url . $paging;
+			}
+			
+			if ( $return_link ) {
+				$rlSmarty -> assign_by_ref('lnp_return_link', $return_link);
+			}
+			
+			$ln_keyword_search_data = $_SESSION['keyword_search_data'];
+			$ln_keyword_search_post = $_SESSION[$listing_type['Key'] .'_post'];
+			unset($_SESSION['keyword_search_data'], $_SESSION[$listing_type['Key'] .'_post']);
+		]]></hook>
+		<hook name="listingDetailsBottom"><![CDATA[
+			global $ln_keyword_search_data, $ln_keyword_search_post, $listing_type;
+			
+			$_SESSION['keyword_search_data'] = $ln_keyword_search_data;
+			$_SESSION[$listing_type['Key'] .'_post'] = $ln_keyword_search_post;
+		]]></hook>
+		<hook name="init"><![CDATA[
+			global $reefless;
+			
+			$reefless -> loadClass('ListingNavigator', null, 'listing_navigator');
+		]]></hook>
+		<hook name="searchMiddle"><![CDATA[
+			global $page_info, $data, $listing_type_key, $rlSearch;
+			$_SESSION['page_info']['current'] = $page_info['Key']. '_search';
+			
+			$_SESSION[$GLOBALS['rlListingNavigator'] -> lts]['data'] = array(
+				'data' => $data,
+				'listing_type_key' => $listing_type_key,
+				'fields' => $rlSearch -> fields
+			);
+			
+			$GLOBALS['rlListingNavigator'] -> listingTypeSearch();
+		]]></hook>
+		<hook name="searchBottom"><![CDATA[
+			$GLOBALS['rlListingNavigator'] -> keywordSearch();
+		]]></hook>
+		<hook name="keywordSearchData"><![CDATA[
+			global $data, $sorting;
+			$_SESSION[$GLOBALS['rlListingNavigator'] -> kws]['data'] = array(
+				'data' => $data,
+				'sorting' => $sorting,
+			);
+		]]></hook>
+		<hook name="browseMiddle"><![CDATA[
+			global $category, $order_field, $sort_type, $sorting;
+			
+			$_SESSION[$GLOBALS['rlListingNavigator'] -> bc]['data'] = array(
+				'category_id' => $category['ID'],
+				'order_field' => $order_field,
+				'sort_type' => $sort_type,
+				'sorting' => $sorting
+			);
+			
+			$GLOBALS['rlListingNavigator'] -> browseCategory();
+		]]></hook>
+		<hook name="listingsBottom"><![CDATA[
+			$GLOBALS['rlListingNavigator'] -> recentlyAdded();
+		]]></hook>
+		<hook name="accountTypeAccount"><![CDATA[
+			global $account, $sort_by, $sort_type, $sorting;
+			
+			$_SESSION[$GLOBALS['rlListingNavigator'] -> at]['data'] = array(
+				'account_id' => $account['ID'],
+				'sort_by' => $sort_by,
+				'sort_type' => $sort_type,
+				'sorting' => $sorting
+			);
+			$GLOBALS['rlListingNavigator'] -> accountListings();
+		]]></hook>
+	</hooks>
+	
+	<phrases>
+		<phrase key="listingNav_next" module="frontEnd"><![CDATA[Next Listing]]></phrase>
+		<phrase key="listingNav_prev" module="frontEnd"><![CDATA[Previous Listing]]></phrase>
+	</phrases>
+</plugin>

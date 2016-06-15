@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="alertPay">
+	<title>Payza</title>
+	<description>Payza (AlertPay) Payment Gateway</description>
+	<author>John Freeman</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>2.0.1</version>
+	<date>02.07.2009</date>
+	<notice><![CDATA[<b>Payza</a> configuration <a href="#">instruction here</a>]]></notice>
+	<files>
+		<file>controllers/pre.gateway.php</file>
+		<file>controllers/post.gateway.php</file>
+	</files>	
+	
+	<hooks>
+		<hook name="paymentGateway">
+			<![CDATA[
+				global $config;
+				
+				if ( $config['alertPay_module'] && $config['alertPay_account_email'] && $config['alertPay_secure_code'] )
+				{
+                	$GLOBALS['rlSmarty'] -> display(RL_ROOT . 'plugins' . RL_DS . 'alertPay' . RL_DS . 'icon.tpl');
+				}
+			]]>
+		</hook>
+	</hooks>
+	
+	<phrases>
+		<phrase version="2.0.1" key="alertPay_title" module="common"><![CDATA[Payza Payment]]></phrase>
+	<phrases>
+	
+	<config version="2.0.1" key="alertPay_divider" name="Payza payment gateway" type="divider" group="6"><![CDATA[]]></config>
+	<config version="2.0.1" key="alertPay_module" name="Payza module" type="bool" group="6"><![CDATA[1]]></config>
+	<config version="2.0.1" key="alertPay_account_email" name="Payza account E-mail" type="text" group="6"><![CDATA[]]></config>
+	<config version="2.0.1" key="alertPay_secure_code" name="Payza secure code" description="(from Payza business account)" type="text" group="6"><![CDATA[]]></config>
+	<config version="2.0.1" key="alertPay_currency_code" name="Payza currency code" type="text" group="6"><![CDATA[USD]]></config>
+	<config version="2.0.1" key="alertPay_sandbox" name="Payza SandBox" type="bool" group="6"><![CDATA[0]]></config>
+	
+	<updates>
+		<update version="2.0.1" files="controllers/post.gateway.php,controllers/pre.gateway.php,static/alert-pay.png"><![CDATA[]]></update>
+	</updates>
+	
+</plugin>

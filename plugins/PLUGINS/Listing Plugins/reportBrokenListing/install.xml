@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="reportBrokenListing">
+	<title>Report Broken Listing</title>
+	<description>Marks broken listings by adding icons to them</description>
+	<author>Kevin Fly</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>2.0.2</version>
+	<date>31.03.2012</date>
+	<controller>reportBrokenListing</controller>
+	
+	<install><![CDATA[
+	global $rlDb;
+
+	$sql = "
+	CREATE TABLE `".RL_DBPREFIX."report_broken_listing` (
+	  `ID` int(5) NOT NULL AUTO_INCREMENT,
+	  `Listing_ID` int(8) NOT NULL,
+	  `Account_ID` int(8) NOT NULL,
+	  `Date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+	  `Message` varchar(255) CHARACTER SET utf8 NOT NULL DEFAULT '',
+	  PRIMARY KEY (`ID`),
+	  KEY `Listing_ID` (`Listing_ID`)
+	)DEFAULT CHARSET=utf8";
+	$rlDb -> query($sql);
+	]]></install>
+	
+	<hooks>
+		<hook version="2.0.1" name="tplHeader"><![CDATA[
+			if ( defined('RL_MOBILE') )
+				return;
+				
+        	echo '<link rel="stylesheet" type="text/css" href="'.RL_PLUGINS_URL.'reportBrokenListing/static/style.css" />';
+        	if ( RL_LANG_DIR == 'rtl' )
+			{
+				echo '<link href="'. RL_PLUGINS_URL .'reportBrokenListing/static/rtl.css" type="text/css" rel="stylesheet" />';
+			}
+			echo '<script type="text/javascript" src="'.RL_PLUGINS_URL.'reportBrokenListing/static/lib.js"></script>';
+			echo '<script type="text/javascript" src="'.RL_LIBS_URL.'jquery/jquery.textareaCounter.js"></script>';
+        ]]></hook>
+		<hook version="2.0.2" name="listingDetailsAfterStats"><![CDATA[
+			if ( defined('RL_MOBILE') )
+				return;
+				
+			$GLOBALS['rlSmarty'] -> display(RL_ROOT . 'plugins'. RL_DS .'reportBrokenListing'. RL_DS .'details_icon.tpl');
+			define('RBL_FOOTER', true);
+		]]></hook>
+		<hook version="2.0.2" name="listingNavIcons"><![CDATA[
+			if ( defined('RL_MOBILE') )
+				return;
+				
+			global $config;
+			if ( $config['reportBroken_grid_icon'] )
+			{
+				$GLOBALS['rlSmarty'] -> display(RL_ROOT . 'plugins'. RL_DS .'reportBrokenListing'. RL_DS .'grid_icon.tpl');
+				define('RBL_FOOTER', true);
+			}
+		]]></hook>
+		<hook version="2.0.2" name="tplFooter"><![CDATA[
+			if ( defined('RL_MOBILE') || !defined('RBL_FOOTER') )
+				return;
+				
+			$GLOBALS['rlSmarty'] -> display(RL_ROOT . 'plugins'. RL_DS .'reportBrokenListing'. RL_DS .'footer.tpl');
+		]]></hook>
+		<hook version="2.0.1" name="specialBlock"><![CDATA[
+			if ( defined('RL_MOBILE') )
+				return;
+				
+			global $rlXajax;
+			$GLOBALS['reefless'] -> loadClass('ReportBrokenListing', null, 'reportBrokenListing');
+			$rlXajax -> registerFunction( array( 'reportBrokenListing', $GLOBALS['rlReportBrokenListing'], 'ajaxRreportBrokenListing') );
+			$rlXajax -> registerFunction( array( 'removeReportBrokenListing', $GLOBALS['rlReportBrokenListing'], 'ajaxRemoveReportBrokenListing') );
+		]]></hook>	
+		<hook version="2.0.1" name="ajaxRecentlyAddedLoadPost"><![CDATA[
+			if ( defined('RL_MOBILE') )
+				return;
+				
+			global $_response, $config;
+			
+			if ( $config['reportBroken_grid_icon'] )
+			{
+				$_response -> script("
+					reportBrokenLisitngHandler();
+				");
+			}
+		]]></hoot>
+	</hooks>
+	
+	<configs key="reportBroken" name="Report Broken Listing">
+		<![CDATA[]]>
+		<config key="reportBroken_common" name="Common" type="divider"><![CDATA[]]></config>
+		<config key="reportBroken_grid_icon" name="Icons in listing grid" type="bool"><![CDATA[1]]></config>
+		<config key="reportBroken_message_length" name="Report message length" type="text" validate="int"><![CDATA[300]]></config>
+	</configs>
+	
+	<phrases>
+		<phrase key="reportbroken_add_in" module="common"><![CDATA[Report broken listing]]></phrase>
+		<phrase key="reportbroken_add_comment" module="common"><![CDATA[Enter your report]]></phrase>
+		<phrase key="reportbroken_you_should_add_comment" module="common"><![CDATA[Please enter your report]]></phrase>
+		<phrase key="reportbroken_listing_has_been_added" module="common"><![CDATA[Your report has been successfully sent to the Administrator]]></phrase>
+		<phrase key="reportbroken_do_you_want_to_delete_list" module="common"><![CDATA[Are you sure you want to cancel your report?]]></phrase>
+		<phrase key="reportbroken_remove_in" module="common"><![CDATA[Cancel my report]]></phrase>
+		<!--phrase key="reportbroken_do_you_want_to_add_list" module="common"><![CDATA[Are you sure you have reasons to report the listing as broken?]]></phrase-->
+		<phrase key="reportbroken_listing_has_been_removed" module="common"><![CDATA[The broken listing report has been canceled]]></phrase>
+		<phrase key="ext_reportbroken_delete" module="ext"><![CDATA[Remove report]]></phrase>
+		<phrase key="ext_reportbroken_delete_listing" module="ext"><![CDATA[Remove Listing]]></phrase>
+		<phrase key="ext_reportbroken_message" module="ext"><![CDATA[Message]]></phrase>
+		<phrase key="ext_reportBroken_report_by" module="ext"><![CDATA[Report by]]></phrase>
+		<phrase key="ext_reportBroken_guest" module="ext"><![CDATA[Guest]]></phrase>
+		<phrase key="ext_reportBroken_notice_delete" module="ext"><![CDATA[Are you sure you want to delete <b>selected listing</b>? There is not undo!]]></phrase>
+		<phrase key="ext_reportBroken_notice_trash" module="ext"><![CDATA[Are you sure you want to trash <b>selected listing</b> into the trash box?]]></phrase>
+	</phrases>
+    
+	<uninstall><![CDATA[
+		global $rlDb;
+		$sql = "DROP TABLE `".RL_DBPREFIX."report_broken_listing`";
+		$rlDb -> query($sql);
+	]]></uninstall>
+</plugin>

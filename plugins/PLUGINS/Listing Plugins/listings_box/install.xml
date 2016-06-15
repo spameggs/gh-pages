@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="listings_box">
+	<title>Listings Box</title>
+	<description>This plugin create Random, Popular, New block for types of ads in Front-end</description>
+	<author>Dmitry Azavanichus</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>2.2.0</version>
+	<date>20.02.2012</date>
+	<controller>listings_box</controller>
+	<notice/>
+	<files>
+		<file>rlListingsBox.class.php</file>
+		<file>listings_box.block.tpl</file>		
+		<file>admin/listings_box.tpl</file>
+		<file>admin/listings_box.inc.php</file>
+		<file>static/list_box.css</file>
+		<file>static/list_box_rtl.css</file>
+	</files>
+	
+	<install>
+		<![CDATA[
+			global $rlDb;
+			
+			$rlDb -> query( "
+				CREATE TABLE `". RL_DBPREFIX ."listing_box` (
+				  `ID` int(11) NOT NULL AUTO_INCREMENT,
+				  `Type` varchar(255) NOT NULL,
+				  `Box_type` enum('top_rating','popular','recently_added','random') NOT NULL DEFAULT 'recently_added',
+				  `Count` varchar(10) NOT NULL,
+				  `Unique` enum('1','0') NOT NULL DEFAULT '0',
+				  `Display_mode` enum('default','grid') NOT NULL DEFAULT 'default',
+				  `Box_columns` int(2) NOT NULL,
+				  PRIMARY KEY (`ID`)
+				) DEFAULT CHARSET=utf8;" );
+		]]>
+	</install>
+	<hooks>
+		<hook version="2.2.0" name="tplHeader"><![CDATA[
+			if ( !defined('RL_MOBILE') )
+			{
+				echo '<link href="'.RL_PLUGINS_URL.'listings_box/static/list_box.css" type="text/css" rel="stylesheet" />';
+				if(RL_LANG_DIR == 'rtl')
+				{
+					echo '<link href="'.RL_PLUGINS_URL.'listings_box/static/list_box_rtl.css" type="text/css" rel="stylesheet" />';
+				}
+			}
+		]]></hook>
+	</hooks>
+	
+	<phrases>
+		<phrase key="listings_box_ext_box_type" module="ext"><![CDATA[Box Type]]></phrase>
+		<phrase key="listings_box_ext_number_of_listings" module="ext"><![CDATA[Number of listings]]></phrase>
+		<phrase key="listings_box_number_of_listing" module="admin"><![CDATA[Number of listings]]></phrase>
+		<phrase key="listings_box_add_new_block" module="admin"><![CDATA[Add new block]]></phrase>
+		<phrase key="listings_box_block_list" module="admin"><![CDATA[Block list]]></phrase>
+		<phrase key="listings_box_top_rating" module="admin"><![CDATA[Top Rating]]></phrase>
+		<phrase key="listings_box_popular" module="admin"><![CDATA[Popular]]></phrase>
+		<phrase key="listings_box_recently_added" module="admin"><![CDATA[Recently Added]]></phrase>
+		<phrase key="listings_box_random" module="admin"><![CDATA[Random]]></phrase>
+		<phrase key="listings_box_more_listings" module="admin"><![CDATA[Listing of number should not be more 30]]></phrase>
+		<phrase version="2.1.2" key="listings_box_dublicate" module="admin"><![CDATA[Prevent ads displayed in other boxes]]></phrase>
+		<phrase version="2.2.0" key="listings_box_display_mode" module="admin"><![CDATA[Display Mode]]></phrase>
+		<phrase version="2.2.0" key="listings_box_default" module="admin"><![CDATA[Default]]></phrase>
+		<phrase version="2.2.0" key="listings_box_grid" module="admin"><![CDATA[Small Thumb Grid]]></phrase>
+		<phrase version="2.2.0" key="listings_box_columns" module="admin"><![CDATA[Box Columns]]></phrase>
+		<phrase version="2.2.0" key="listings_box_more_one_columns" module="admin"><![CDATA[You have to add at least two box columns]]></phrase>
+	</phrases>
+	
+	<uninstall>
+        <![CDATA[
+			global $rlDb;
+			$rlDb -> query( "DROP TABLE `". RL_DBPREFIX ."listing_box`" );
+		]]>
+	</uninstall>
+</plugin>

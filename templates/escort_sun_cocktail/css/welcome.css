@@ -1,0 +1,120 @@
+/* welcome screen */
+@font-face {
+	font-family: 'Philosopher';
+	font-style: normal;
+	font-weight: 400;
+	src: local('Philosopher'), url('../philosopher.woff') format('woff');
+}
+body, html
+{
+	height: 100%;
+}
+body
+{
+	margin: 0px auto;
+	font-family: 'Philosopher', sans-serif;
+	background: url('../img/body_bg.gif') center top repeat #f8ebd7;
+	font-size: 15px;
+	color: #373737;
+	line-height: 1.47\9;
+}
+
+a:link,
+a:visited
+{
+	color: #5f5f5f;
+	text-decoration: none;
+	font-weight: normal;
+}
+a:hover,
+a:active 
+{
+	text-decoration: underline;
+}
+
+body.welcome div#content_height
+{
+	margin: 0 auto;
+	width: 960px;
+	min-height: 100%;
+}
+img
+{
+	border: 0;
+}
+div#crosspiece
+{
+	height: 50px;
+}
+div.top-spirts
+{
+	padding: 23px 0 0 0;
+	background: url('../img/welcome-bg.jpg') top center no-repeat;
+	height: 855px;
+}
+div.logo
+{
+	text-align: center;
+	margin: 148px 0 0;
+}
+div.welcome-footer
+{
+	height: 49px;
+	margin-top: -49px;
+	font-size: 12px;
+	color: #676767;
+	text-align: center;
+}
+div.content-notice
+{
+	width: 73px;
+	margin: 17px auto 0;
+}
+div.content-notice div
+{
+	font-size: 14px;
+	line-height: 14px;
+	text-align: center;
+	color: #2e2e2e;
+}
+div.message
+{
+	padding: 180px 0 0 0;
+	text-align: center;
+}
+div.buttons
+{
+	padding-top: 64px;
+	text-align: center;
+}
+div.buttons > div
+{
+	padding-top: 64px;
+	text-align: center;
+}
+a.enter-btn:link,
+a.enter-btn:visited
+{
+	color: #fffefe;
+	font-size: 24px;
+	text-shadow: 0 1px 0 rgba(188,57,0, .8);
+	text-decoration: none;
+}
+a.enter-btn:hover,
+a.enter-btn:active
+{
+	text-decoration: underline;
+}
+
+a.exit-btn:link,
+a.exit-btn:visited
+{
+	color: #000000;
+	text-decoration: underline;
+}
+a.exit-btn:hover,
+a.exit-btn:active
+{
+	text-decoration: none;
+}
+/* welcome screen end */

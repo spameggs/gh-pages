@@ -1,0 +1,3 @@
+FAQs plugin gives you an option to arrange a section with frequently asked questions on your website by simple click on installation button of the plugin.
+
+This plugin creates a new page and a block for frequently asked questions on your website. The FAQs block can be placed on any other web site pages. By creation of questions and answers in the administration interface you fill in the FAQs page with useful questions and answers that makes easier the use of your website. This will reduce questions that maybe asked by your site users.

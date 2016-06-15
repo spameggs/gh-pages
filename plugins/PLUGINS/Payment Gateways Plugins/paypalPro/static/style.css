@@ -1,0 +1,14 @@
+input[type="text"].card_number {
+	text-align: center;
+	width: 40px;
+}
+input[type="text"].csc {
+	text-align: center;
+	width: 40px;
+}
+.pp_select_month {
+	width: 60px;
+}
+.pp_select_year {
+	width: 65px;
+}

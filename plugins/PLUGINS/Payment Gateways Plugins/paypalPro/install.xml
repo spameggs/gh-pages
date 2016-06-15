@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="paypalPro">
+	<title>Paypal Pro</title>
+	<description>Paypal Pro Payment Gateway</description>
+	<author>Vladimir</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>1.0.0</version>
+	<date>14.01.2013</date>
+
+	<files>
+		<file>paypal_pro.inc.php</file>
+		<file>paypal_pro.tpl</file>
+
+		<file>controllers/post.gateway.php</file>
+		<file>controllers/pre.gateway.php</file>
+
+		<file>rlPaypalPro.class.php</file>
+		<file>gateway.tpl</file>
+	</files>
+
+	<install>
+		<![CDATA[
+			global $reefless;
+
+			$reefless -> loadClass('PaypalPro', null, 'paypalPro');
+			$GLOBALS['rlPaypalPro'] -> install();
+		]]>
+	</install>
+
+	<hooks>
+		<hook name="paymentGateway">
+			<![CDATA[ 	
+				global $aHooks;
+
+				if ( $aHooks['paypalPro'] && extension_loaded( 'curl' ) )
+				{
+					$GLOBALS['rlSmarty'] -> display( RL_ROOT . 'plugins' . RL_DS . 'paypalPro' . RL_DS . 'gateway.tpl' );
+				}
+			]]>
+		</hook>
+		<hook name="tplHeader">
+			<![CDATA[
+				echo '<link href="'.RL_PLUGINS_URL.'paypalPro/static/style.css" type="text/css" rel="stylesheet" />';
+			]]>
+		</hook>
+	</hooks>
+
+	<pages>
+		<page key="paypal_pro" name="Paypal Pro Payment Checkout" type="system" path="paypal-pro" login="1" controller="paypal_pro" tpl="1"><![CDATA[]]></page>
+	</pages>
+
+	<phrases> 
+		<phrase key="dpp_country" module="common"><![CDATA[Country]]></phrase>
+		<phrase key="dpp_card_number" module="common"><![CDATA[Card number]]></phrase>
+		<phrase key="dpp_payment_types" module="common"><![CDATA[Card Type]]></phrase>
+		<phrase key="dpp_expiration_date" module="common"><![CDATA[Expiration date]]></phrase>
+		<phrase key="dpp_mm" module="common"><![CDATA[mm]]></phrase>
+		<phrase key="dpp_yy" module="common"><![CDATA[yy]]></phrase>
+		<phrase key="dpp_csc" module="common"><![CDATA[CSC]]></phrase>
+		<phrase key="dpp_first_name" module="common"><![CDATA[First name]]></phrase>
+		<phrase key="dpp_last_name" module="common"><![CDATA[Last name]]></phrase>
+		<phrase key="dpp_address_1" module="common"><![CDATA[Address line 1]]></phrase>
+		<phrase key="dpp_address_2" module="common"><![CDATA[Address line 2]]></phrase>
+		<phrase key="dpp_city" module="common"><![CDATA[City/State]]></phrase>
+		<phrase key="dpp_state" module="common"><![CDATA[State]]></phrase>
+		<phrase key="dpp_zip_code" module="common"><![CDATA[ZIP code]]></phrase>
+		<phrase key="dpp_phone" module="common"><![CDATA[Phone number]]></phrase>
+		<phrase key="dpp_phone_example" module="common"><![CDATA[555-555-1234]]></phrase>
+		<phrase key="dpp_email" module="common"><![CDATA[E-mail]]></phrase>
+
+		<phrase key="dpp_visa" module="common"><![CDATA[Visa]]></phrase>
+		<phrase key="dpp_mastercard" module="common"><![CDATA[Mastercard]]></phrase>
+		<phrase key="dpp_amex" module="common"><![CDATA[American Express]]></phrase>
+		<phrase key="dpp_discover" module="common"><![CDATA[Discover]]></phrase>
+		<phrase key="dpp_gateway" module="common"><![CDATA[Paypal Pro Payment Gateway]]></phrase>
+		<phrase key="dpp_payment_info" module="common"><![CDATA[Payment Info]]></phrase>
+		<phrase key="dpp_item_info" module="common"><![CDATA[Order Information]]></phrase>
+		<phrase key="dpp_item_name" module="common"><![CDATA[Item]]></phrase>
+		<phrase key="dpp_item_price" module="common"><![CDATA[Price]]></phrase>
+		<phrase key="dpp_submit" module="common"><![CDATA[Submit]]></phrase>
+		<phrase key="dpp_credit_card_details" module="common"><![CDATA[Credit Card Details]]></phrase>
+		<phrase key="dpp_personal_details" module="common"><![CDATA[Personal Details]]></phrase>
+		<phrase key="dpp_plan_name" module="common"><![CDATA[Plan]]></phrase>
+	</phrases>
+
+	<config key="dpp_divider" name="Paypal Pro Payment Gateway" description="" values="" type="divider" group="6"><![CDATA[]]></config>
+	<config key="dpp_module" name="Paypal Pro Module" description="" values="" type="bool" validate="" group="6"><![CDATA[1]]></config>
+	<config key="dpp_api_username" name="API Username" description="" values="" type="text" validate="" group="6"><![CDATA[]]></config>
+	<config key="dpp_api_password" name="API Password" description="" values="" type="text" validate="" group="6"><![CDATA[]]></config>
+	<config key="dpp_api_signature" name="API Signature" description="" values="" type="text" validate="" group="6"><![CDATA[]]></config>
+	<config key="dpp_currency" name="Currency" description="" values="" type="text" validate="" group="6"><![CDATA[USD]]></config>
+	<config key="dpp_version" name="Version" description="" values="" type="text" validate="" group="6"><![CDATA[57.0]]></config>
+	<config key="dpp_test_mode" name="Test Mode" description="" values="" type="bool" validate="" group="6"><![CDATA[0]]></config>
+
+	<uninstall>
+		<![CDATA[
+			global $reefless;
+
+			$reefless -> loadClass('PaypalPro', null, 'paypalPro');
+			$GLOBALS['rlPaypalPro'] -> uninstall();
+		]]>
+	</uninstall>
+</plugin>

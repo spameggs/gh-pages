@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<plugin name="authorizeNet">
+	<title>AuthorizeNet</title>
+	<description>AuthorizeNet payment gateway</description>
+	<author>Vladimir</author>
+	<owner>Flynax Classifieds Software</owner>
+	<version>2.0.0</version>
+	<date>11.02.2012</date>
+
+	<files>
+		<file>controllers/pre.gateway.php</file>
+		<file>controllers/post.gateway.php</file>
+		<file>authorize_net_payment_block.tpl</file>
+	</files>
+  
+	<hooks>
+		<hook name="paymentGateway"><![CDATA[
+			global $config;
+			if ( $config['aNet_module'] && $config['aNet_transaction_key'] && $config['aNet_account_id'] )
+			{
+            	$GLOBALS['rlSmarty'] -> display(RL_ROOT . 'plugins' . RL_DS . 'authorizeNet' . RL_DS . 'authorize_net_payment_block.tpl');
+			}
+		]]></hook>
+	</hooks>
+
+	<phrases>
+		<phrase key="aNet_payment" module="common"><![CDATA[AuthorizeNet payment gateway]]></phrase>
+	<phrases>
+
+	<config key="aauthorize_net_divider" name="AuthorizeNet payment gateway" description="" values="" type="divider" group="6"><![CDATA[]]></config>
+	<config key="aNet_module" name="AuthorizeNet module" description="" values="" type="bool" validate="" group="6"><![CDATA[1]]></config>
+	<config key="aNet_transaction_key" name="Transaction Key" description="" values="" type="text" group="6" validate=""><![CDATA[]]></config>
+	<config key="aNet_account_id" name="Account ID" description="" values="" type="text" validate="" group="6"><![CDATA[]]></config>
+	<config key="aNet_sandbox" name="Use SandBox" description="" values="" type="bool" validate="" group="6"><![CDATA[0]]></config>
+</plugin>
